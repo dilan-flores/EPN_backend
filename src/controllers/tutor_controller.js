@@ -1,0 +1,185 @@
+//Importar el modelo Tutor
+import Tutor from "../models/Tutor.js"
+import { sendMailToUser, sendMailToRecoveryPassword } from "../config/nodemailer.js"
+import generarJWT from "../helpers/crearJWT.js"
+import mongoose from "mongoose";
+
+const login = async (req, res) => {
+    // Capturar los datos del requests
+    const { Email_tutor, Password_tutor } = req.body
+    // Vallidación de campos vacíos
+    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Obtener el tutor en base al email
+    const TutorBDD = await Tutor.findOne({ Email_tutor }).select("-status -__v -token -updatedAt -createdAt")
+    // Validar si iexiste el tutor
+    if (TutorBDD?.confirmEmail === false) return res.status(403).json({ msg: "Lo sentimos, debe verificar su cuenta" })
+    // Verificar si existe el tutor
+    if (!TutorBDD) return res.status(404).json({ msg: "Lo sentimos, el tutor no se encuentra registrado" })
+    // Validar si el password del request es el mismo de la BDD
+    const verificarPassword = await TutorBDD.matchPassword(Password_tutor)
+    if (!verificarPassword) return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" })
+
+    const token = generarJWT(TutorBDD._id)
+
+    // Desestructurar la información del tutor; Mandar solo algunos campos 
+    const { Nombre_tutor, Rol_tutor, Celular_tutor, _id } = TutorBDD
+
+    // Presentación de datos
+    res.status(200).json({
+        token,
+        Nombre_tutor,
+        Rol_tutor,
+        Celular_tutor,
+        _id,
+        Email_tutor: TutorBDD.Email_tutor // segunda opción
+    })
+}
+
+const registrar = async (req, res) => {
+    //Capturar los datos del body de la petición
+    const { Email_tutor, Password_tutor } = req.body
+    //Validación de los compos vacíos
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Validación de existencia del mail
+    const verificarEmailBDD = await Tutor.findOne({ Email_tutor })
+
+    if (verificarEmailBDD) return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" })
+    // Crear la instancia del modelo
+    const nuevoTutor = new Tutor(req.body)
+    // Encriptar el password del tutor
+    nuevoTutor.Password_tutor = await nuevoTutor.encrypPassword(Password_tutor)
+    // Crear el token del tutor
+    nuevoTutor.crearToken()
+
+    // Crear el token del tutor
+    const token = nuevoTutor.crearToken()
+    // Invocar la función para el envío del correo
+    await sendMailToUser(Email_tutor, token)
+    // Guardar en la base de datos 
+    await nuevoTutor.save()
+    // Enviar la respuesta
+    res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" })
+}
+
+const confirmEmail = async (req, res) => {
+    // Validar el token del correo
+    if (!(req.params.token)) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Verificar si en base al token existe ese tutor
+    const TutorBDD = await Tutor.findOne({ token: req.params.token })
+    // Validar si el token ya fue seteado al null
+    if (!TutorBDD?.token) return res.status(404).json({ msg: "La cuenta ya ha sido confirmada" })
+    // Setear a null el token 
+    TutorBDD.token = null
+    // cambiar a true la configuración de la cuenta
+    TutorBDD.confirmEmail = true
+    // Guardar cambios en BDD
+    await TutorBDD.save()
+    // Presentar mensajes al tutor
+    res.status(200).json({ msg: "Token confirmado, ya puedes iniciar sesión" })
+}
+
+const perfilTutor = async (req, res) => {
+    // Se obtiene el ID del tutor que ingresó al sistema
+    const { id } = req.params
+    // Validar ID en DBB tutor
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
+    // Obtener información tutor en base al ID
+    const tutorBDD = await Tutor.findById(id).select("-Password_tutor -confirmEmail -token -status -updatedAt -__v ")
+    // Validar si existe el tutor
+    if (!tutorBDD) return res.status(404).json({ msg: `Lo sentimos, no existe el tutor ${id}` })
+    // Mostrar los datos del tutor
+    res.status(200).json({ msg: tutorBDD })
+}
+
+// const perfil =(req,res)=>{
+//     delete req.tutorBDD.token
+//     delete req.tutorBDD.confirmEmail
+//     delete req.tutorBDD.createdAt
+//     delete req.tutorBDD.updatedAt
+//     delete req.tutorBDD.__v
+//     res.status(200).json(req.tutorBDD)
+// }
+
+// const actualizarPassword = async (req,res)=>{
+//     const tutorBDD = await Tutor.findById(req.tutorBDD._id)
+//     if(!tutorBDD) return res.status(404).json({msg:`Lo sentimos, no existe el tutor ${id}`})
+//     const verificarPassword = await tutorBDD.matchPassword(req.body.passwordactual)
+//     if(!verificarPassword) return res.status(404).json({msg:"Lo sentimos, el password actual no es el correcto"})
+//     tutorBDD.password = await tutorBDD.encrypPassword(req.body.passwordnuevo)
+//     await tutorBDD.save()
+//     res.status(200).json({msg:"Password actualizado correctamente"})
+// }
+
+const recuperarPassword = async (req, res) => {
+    // Se obtiene el email del tutor
+    const { Email_tutor } = req.body
+    // Validación de campos vacíos
+    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Obtener el tutor en base al email
+    const tutorBDD = await Tutor.findOne({ Email_tutor })
+    // Validación de existencia de tutor
+    if (!tutorBDD) return res.status(404).json({ msg: "Lo sentimos, el tutor no se encuentra registrado" })
+    // creación del token
+    const token = tutorBDD.crearToken()
+    // Establecer el token en el tutor optenido previamente
+    tutorBDD.token = token
+    // Enviar el email de recuperación
+    await sendMailToRecoveryPassword(Email_tutor, token)
+    // Guardar los cambio en BDD
+    await tutorBDD.save()
+    // Presentar mensajes al tutor
+    res.status(200).json({ msg: "Revisa tu correo electrónico para reestablecer tu cuenta" })
+}
+
+const comprobarTokenPasword = async (req, res) => {
+    // Validar el token
+    if (!(req.params.token)) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Obtener el tutor en base al token
+    const tutorBDD = await Tutor.findOne({ token: req.params.token })
+    // Validación si existe el tutor
+    if (tutorBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Guardar en BDD
+    await tutorBDD.save()
+    // Presentar mensaje al tutor
+    res.status(200).json({ msg: "Token confirmado, ya puedes crear tu nuevo password" })
+}
+
+const nuevoPassword = async (req, res) => {
+    // Obtener el password nuevo y la confirmación del password del request
+    const { password, confirmpassword } = req.body
+    // Validación de campos vacíos
+    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Validar coincidencia de los password
+    if (password != confirmpassword) return res.status(404).json({ msg: "Lo sentimos, los passwords no coinciden" })
+    // Obtener lo datos del tutor en base al token
+    const tutorBDD = await Tutor.findOne({ token: req.params.token })
+    // Validar la existencia de tutor
+    if (tutorBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Setear el token nuevamente a null
+    tutorBDD.token = null
+    // Encriptar el nuevo password
+    tutorBDD.Password_tutor = await tutorBDD.encrypPassword(password)
+    // Guardar en BDD
+    await tutorBDD.save()
+    // Mostrar mensaje al tutor
+    res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" })
+}
+
+const logoutTutor = async (req, res) => {
+    req.logout((err) => {
+        if (err) return res.status(500).json({ msg: "Ocurrió un error al cerrar sesión" });
+
+        return res.status(200).json({ msg: "Sesión cerrada exitosamente" });
+    });
+}
+
+export {
+    login,
+    registrar,
+    confirmEmail,
+    perfilTutor,
+    recuperarPassword,
+    comprobarTokenPasword,
+    nuevoPassword,
+    logoutTutor
+}

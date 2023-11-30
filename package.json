@@ -1,0 +1,43 @@
+{
+  "name": "backend_programacion_ninos",
+  "version": "1.0.0",
+  "description": "Backend: Aprendizaje de programación en niños menores a 12 años",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": "^12.22.0 || ^14.17.0 || >=16.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dilan-flores/EPN_backend.git"
+  },
+  "author": "Dilan Flores",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dilan-flores/EPN_backend/issues"
+  },
+  "homepage": "https://github.com/dilan-flores/EPN_backend#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "fs-extra": "^11.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.3.0",
+    "mongoose": "^7.5.3",
+    "nodemailer": "^6.9.7",
+    "passport": "^0.7.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
