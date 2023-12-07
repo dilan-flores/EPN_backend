@@ -1,4 +1,6 @@
 import mongoose, {Schema,model} from 'mongoose'
+// Encriptar el password del Tutor
+import bcrypt from "bcryptjs"
 
 const NinoSchema = new Schema({
     Nombre_nino:{

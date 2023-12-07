@@ -1,70 +1,108 @@
 //Importar el modelo Niño
 import Nino from "../models/Nino.js"
 //, sendMailToRecoveryPassword_Nino 
-import {sendMail_confirmNino} from "../config/nodemailer.js"
-import { uploadImage,deleteImage } from "../config/cloudinary.js"
+import { sendMail_confirmNino } from "../config/nodemailer.js"
+import { uploadImage, deleteImage } from "../config/cloudinary.js"
 import fs from "fs-extra"//manipulación de directorios e imágenes en cloudinary
 
+import jwt from 'jsonwebtoken'
+import Tutor from '../models/Tutor.js'
+
 const renderAllNino = async (req, res) => {
-    console.log("Autenticación exitosa:", req.user);
-    try {
-        if (!req.user) {
-            return res.status(401).json({ msg: 'No autorizado'});
+    if (req.headers.authorization) {
+        try {
+            const { authorization } = req.headers;
+            const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+            console.log("Autenticación exitosa:", id);
+
+            const ninos = await Nino.find({ tutor: id }).lean();
+
+            if (ninos.length === 0) {
+                return res.status(200).json({ msg: 'No hay niños asociados a este tutor' });
+            }
+
+            // Envía la respuesta con los niños encontrados
+            res.status(200).json({ ninos });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ msg: 'Error del servidor' });
         }
-        // Busca todos los niños asociados al tutor
-        const ninos = await Nino.find({ tutor: req.user }).lean();
-        
-        if (ninos.length === 0) {
-            return res.status(200).json({ msg: 'No hay niños asociados a este tutor' });
-        }
-        
-        // Envía la respuesta con los niños encontrados
-        res.status(200).json({ ninos });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ msg: 'Error del servidor' });
+    } else {
+        res.status(401).json({ msg: 'No autorizado' });
     }
 };
 
-const registrarNino = async (req,res)=>{
-    // Desustructurar
-    const  {Usuario_nino,Password_nino} = req.body
-    // Validar los campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
-    // Validación de existencia del Usuario niño
-    const verificarUsuarioBDD = await Nino.findOne({ Usuario_nino })
+const registrarNino = async (req, res) => {
+    if (req.headers.authorization) {
+        try {
+            const { authorization } = req.headers;
+            const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+            console.log("Autenticación exitosa:", id);
 
-    if (verificarUsuarioBDD) return res.status(400).json({ msg: "Lo sentimos, el usuario ya se encuentra registrado" })
-    // Crear la instancia del modelo
-    const {Nombre_nino, FN_nino} = req.body;
-    const nuevoNino = new Nino(Nombre_nino, FN_nino)
+            const { Usuario_nino, Password_nino, Nombre_nino, FN_nino } = req.body;
 
-    // Encriptar el password del Niño
-    nuevoNino.Password_nino = await nuevoNino.encrypPassword(Password_nino)
-    // Crear el token del Niño
-    nuevoNino.crearToken()
-    const token = nuevoNino.crearToken()
-    // Asociar el niño al tutor
-    nuevoNino.tutor = req.user._id; // Obtener el ID del tutor autenticado
+            // Validar los campos vacíos
+            if (!Usuario_nino || !Password_nino || !Nombre_nino || !FN_nino) {
+                return res.status(400).json({ msg: "Todos los campos son obligatorios" });
+            }
 
-    // Validar imagen
-    if(!(req.files?.image)) return res.send("Se requiere una imagen")
-    // Invocación del método
-    const imageUpload = await uploadImage(req.files.image.tempFilePath)
-    nuevoNino.image = {
-        public_id:imageUpload.public_id,
-        secure_url:imageUpload.secure_url
+            // Validación de existencia del Usuario niño
+            const verificarUsuarioBDD = await Nino.findOne({ Usuario_nino });
+
+            if (verificarUsuarioBDD) {
+                return res.status(400).json({ msg: "El usuario ya se encuentra registrado" });
+            }
+
+            // Crear la instancia del modelo
+            const nuevoNino = new Nino({
+                Nombre_nino,
+                FN_nino,
+                Usuario_nino,
+                Password_nino,
+                tutor: id,
+            });
+
+            // Encriptar el password del Niño
+            nuevoNino.Password_nino = await nuevoNino.encrypPassword(Password_nino);
+
+            // Validar imagen
+            if (!req.files || !req.files.image || !req.files.image.tempFilePath) {
+                return res.status(400).json({ msg: "Se requiere una imagen" });
+            }
+
+            // Invocación del método
+            const imageUpload = await uploadImage(req.files.image.tempFilePath);
+            nuevoNino.image = {
+                public_id: imageUpload.public_id,
+                secure_url: imageUpload.secure_url,
+            };
+
+
+            // Crear el token del Niño
+            nuevoNino.crearToken();
+            const token = nuevoNino.crearToken();
+
+            // Email del Tutor
+            const tutorEmail = await Tutor.findById(id).select('Email_tutor').lean();
+
+            // Invocar la función para el envío del correo
+            await sendMail_confirmNino(tutorEmail, token, Nombre_nino);
+
+            // Guardar en la base de datos
+            await nuevoNino.save();
+
+            // Enviar la respuesta
+            res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ msg: 'Error del servidor' });
+        }
+    } else {
+        res.status(401).json({ msg: 'No autorizado' });
     }
-
-    // Email del Tutor
-    const tutorEmail = req.user.Email_tutor;
-    // Invocar la función para el envío del correo
-    await sendMail_confirmNino(tutorEmail, token, Nombre_nino)
-    // Guardar en la base de datos 
-    await nuevoNino.save()
-    // Enviar la respuesta
-    res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" })
 }
+
 
 const perfilNino = async (req, res) => {
     const { id } = req.params;
@@ -83,7 +121,7 @@ const perfilNino = async (req, res) => {
 
 const actualizarNino = async (req, res) => {
     const { id } = req.params;
-    
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
     }
@@ -161,7 +199,7 @@ const eliminarNino = async (req, res) => {
     }
 };
 
-export{
+export {
     renderAllNino,
     registrarNino,
     perfilNino,

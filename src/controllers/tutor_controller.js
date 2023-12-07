@@ -3,6 +3,33 @@ import Tutor from "../models/Tutor.js"
 import { sendMailToUser, sendMailToRecoveryPassword } from "../config/nodemailer.js"
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
+import { body, validationResult } from 'express-validator';
+
+
+const nuevoPasswordValidations = [
+    body('password')
+        .notEmpty().withMessage('La contraseña es obligatoria')
+        .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
+        .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
+];
+const tutorRoles = ["Padre", "Madre", "Familiar", "Otros"];
+const validar = [
+    body('Nombre_tutor'),
+    body('Rol_tutor')
+        .custom((value) => {
+            if (!tutorRoles.includes(value)) {
+                throw new Error('El rol debe ser "Padre", "Madre", "Familiar" u "Otros"');
+            }
+            return true;
+        }),
+    body('Celular_tutor')
+        .isNumeric().withMessage('El celular debe contener solo números')
+        .isLength({ min: 10, max: 10 }).withMessage('El celular debe tener 10 dígitos'),
+    body('Email_tutor').isEmail().withMessage('El email debe ser válido'),
+    body('Password_tutor')
+        .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
+        .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
+];
 
 const login = async (req, res) => {
     // Capturar los datos del requests
@@ -18,12 +45,9 @@ const login = async (req, res) => {
     // Validar si el password del request es el mismo de la BDD
     const verificarPassword = await TutorBDD.matchPassword(Password_tutor)
     if (!verificarPassword) return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" })
-
     const token = generarJWT(TutorBDD._id)
-
     // Desestructurar la información del tutor; Mandar solo algunos campos 
     const { Nombre_tutor, Rol_tutor, Celular_tutor, _id } = TutorBDD
-
     // Presentación de datos
     res.status(200).json({
         token,
@@ -36,30 +60,46 @@ const login = async (req, res) => {
 }
 
 const registrar = async (req, res) => {
-    //Capturar los datos del body de la petición
-    const { Email_tutor, Password_tutor } = req.body
-    //Validación de los compos vacíos
-    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
-    // Validación de existencia del mail
-    const verificarEmailBDD = await Tutor.findOne({ Email_tutor })
+    try {
+        // Validación de campos vacíos
+        if (Object.values(req.body).some(value => value === "")) {
+            return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+        }
+        // Ejecutar las validaciones
+        await Promise.all(validar.map(validation => validation.run(req)));
+        // Obtener los resultados de la validación
+        const errors = validationResult(req);
+        // Verificar si hay errores
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
+        // Capturar los datos del body de la petición
+        const { Email_tutor, Password_tutor } = req.body;
+        // Validación de existencia del mail
+        const verificarEmailBDD = await Tutor.findOne({ Email_tutor });
+        if (verificarEmailBDD) {
+            return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+        }
+        // Crear la instancia del modelo
+        const nuevoTutor = new Tutor(req.body);
+        // Encriptar el password del tutor
+        nuevoTutor.Password_tutor = await nuevoTutor.encrypPassword(Password_tutor);
+        // Crear el token del tutor
+        nuevoTutor.crearToken();
+        // Crear el token del tutor
+        const token = nuevoTutor.crearToken();
+        // Invocar la función para el envío del correo
+        await sendMailToUser(Email_tutor, token);
+        // Guardar en la base de datos
+        await nuevoTutor.save();
+        // Enviar la respuesta
+        res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+    } catch (error) {
+        console.error('Error durante el registro:', error);
+        res.status(500).json({ msg: 'Ocurrió un error durante el registro' });
+    }
+};
 
-    if (verificarEmailBDD) return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" })
-    // Crear la instancia del modelo
-    const nuevoTutor = new Tutor(req.body)
-    // Encriptar el password del tutor
-    nuevoTutor.Password_tutor = await nuevoTutor.encrypPassword(Password_tutor)
-    // Crear el token del tutor
-    nuevoTutor.crearToken()
-
-    // Crear el token del tutor
-    const token = nuevoTutor.crearToken()
-    // Invocar la función para el envío del correo
-    await sendMailToUser(Email_tutor, token)
-    // Guardar en la base de datos 
-    await nuevoTutor.save()
-    // Enviar la respuesta
-    res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" })
-}
 
 const confirmEmail = async (req, res) => {
     // Validar el token del correo
@@ -145,25 +185,45 @@ const comprobarTokenPasword = async (req, res) => {
 }
 
 const nuevoPassword = async (req, res) => {
-    // Obtener el password nuevo y la confirmación del password del request
-    const { password, confirmpassword } = req.body
-    // Validación de campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
-    // Validar coincidencia de los password
-    if (password != confirmpassword) return res.status(404).json({ msg: "Lo sentimos, los passwords no coinciden" })
-    // Obtener lo datos del tutor en base al token
-    const tutorBDD = await Tutor.findOne({ token: req.params.token })
-    // Validar la existencia de tutor
-    if (tutorBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
-    // Setear el token nuevamente a null
-    tutorBDD.token = null
-    // Encriptar el nuevo password
-    tutorBDD.Password_tutor = await tutorBDD.encrypPassword(password)
-    // Guardar en BDD
-    await tutorBDD.save()
-    // Mostrar mensaje al tutor
-    res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" })
-}
+    try {
+        // Validación de campos vacíos
+        if (Object.values(req.body).some(value => value === "")) {
+            return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+        }
+        // Validar coincidencia de los passwords
+        const { password, confirmpassword } = req.body;
+        if (password !== confirmpassword) {
+            return res.status(404).json({ msg: "Lo sentimos, los passwords no coinciden" });
+        }
+        // Aplicar validaciones de nuevoPassword
+        await Promise.all(nuevoPasswordValidations.map(validation => validation.run(req)));
+        // Obtener los resultados de la validación
+        const errors = validationResult(req);
+        // Verificar si hay errores
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        // Obtener los datos del tutor en base al token
+        const tutorBDD = await Tutor.findOne({ token: req.params.token });
+        // Validar la existencia de tutor y que el token no sea null o undefined
+        if (!tutorBDD || tutorBDD.token === null) {
+            console.log("Valor de tutorBDD.token:", tutorBDD.token);
+            console.log("Valor de req.params.token:", req.params.token);
+            return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+        }
+        // Setear el token nuevamente a null
+        tutorBDD.token = null;
+        // Encriptar el nuevo password
+        tutorBDD.Password_tutor = await tutorBDD.encrypPassword(password);
+        // Guardar en BDD
+        await tutorBDD.save();
+        // Mostrar mensaje al tutor
+        res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" });
+    } catch (error) {
+        console.error("Error al cambiar la contraseña:", error);
+        res.status(500).json({ msg: "Ocurrió un error al cambiar la contraseña" });
+    }
+};
 
 const logoutTutor = async (req, res) => {
     req.logout((err) => {
