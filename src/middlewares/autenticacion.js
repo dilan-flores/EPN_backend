@@ -8,8 +8,6 @@ const verificarAutenticacion = async (req,res,next)=>{
         try {
             const {id} = jwt.verify(authorization.split(' ')[1],process.env.JWT_SECRET)
             req.tutorBDD = await Tutor.findById(id).lean().select("-Password_tutor")
-            console.log("Id tutor:", id);
-
             next()
         } catch (error) {
             const e = new Error("Formato del token no válido")

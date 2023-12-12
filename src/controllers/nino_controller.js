@@ -8,18 +8,50 @@ import fs from "fs-extra"//manipulación de directorios e imágenes en cloudinar
 import jwt from 'jsonwebtoken'
 import Tutor from '../models/Tutor.js'
 
+import { body, validationResult } from 'express-validator';
+import moment from 'moment';
+
+const validar = [
+    body('Nombre_nino')
+        .isLength({ min: 2, max: 15 }).withMessage('La contraseña debe tener entre 2 y 15 caracteres'),
+
+    body('FN_nino')
+        .custom(value => {
+            if (!moment(value, 'YYYY-MM-DD', true).isValid()) {
+                throw new Error('La fecha de nacimiento debe tener un formato de fecha válido (ejemplo: "2012-11-30")');
+            }
+            return true;
+        }),
+
+    body('Usuario_nino')
+        .isLength({ min: 2, max: 15 }).withMessage('La contraseña debe tener entre 2 y 15 caracteres')
+        .trim(),
+
+    body('Password_nino')
+        .notEmpty().withMessage('La contraseña del niño es obligatoria')
+        .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
+        .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
+];
+
+
 const renderAllNino = async (req, res) => {
     if (req.headers.authorization) {
         try {
             const { authorization } = req.headers;
             const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
-            console.log("Autenticación exitosa:", id);
+            //console.log("Autenticación exitosa:", id);
 
-            const ninos = await Nino.find({ tutor: id }).lean();
+            const ninos = await Nino.find({ tutor: id }).select("-Password_nino -token -updatedAt -status -confirm_tutor -__v").lean();
 
             if (ninos.length === 0) {
                 return res.status(200).json({ msg: 'No hay niños asociados a este tutor' });
             }
+
+            // Formatear la fecha en cada niño
+            ninos.forEach(nino => {
+                nino.FN_nino = new Date(nino.FN_nino).toLocaleDateString();
+                nino.createdAt = new Date(nino.createdAt).toLocaleDateString();
+            });
 
             // Envía la respuesta con los niños encontrados
             res.status(200).json({ ninos });
@@ -37,13 +69,22 @@ const registrarNino = async (req, res) => {
         try {
             const { authorization } = req.headers;
             const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
-            console.log("Autenticación exitosa:", id);
+            //console.log("Autenticación exitosa:", id);
 
             const { Usuario_nino, Password_nino, Nombre_nino, FN_nino } = req.body;
 
-            // Validar los campos vacíos
-            if (!Usuario_nino || !Password_nino || !Nombre_nino || !FN_nino) {
-                return res.status(400).json({ msg: "Todos los campos son obligatorios" });
+            // Validación de campos vacíos
+            if (Object.values(req.body).some(value => value === "")) {
+                return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+            }
+
+            // Ejecutar las validaciones
+            await Promise.all(validar.map(validation => validation.run(req)));
+            // Obtener los resultados de la validación
+            const errors = validationResult(req);
+            // Verificar si hay errores
+            if (!errors.isEmpty()) {
+                return res.status(422).json({ errors: errors.array() });
             }
 
             // Validación de existencia del Usuario niño
@@ -66,16 +107,16 @@ const registrarNino = async (req, res) => {
             nuevoNino.Password_nino = await nuevoNino.encrypPassword(Password_nino);
 
             // Validar imagen
-            if (!req.files || !req.files.image || !req.files.image.tempFilePath) {
-                return res.status(400).json({ msg: "Se requiere una imagen" });
-            }
+            // if (!req.files || !req.files.image || !req.files.image.tempFilePath) {
+            //     return res.status(400).json({ msg: "Se requiere una imagen" });
+            // }
 
             // Invocación del método
-            const imageUpload = await uploadImage(req.files.image.tempFilePath);
-            nuevoNino.image = {
-                public_id: imageUpload.public_id,
-                secure_url: imageUpload.secure_url,
-            };
+            // const imageUpload = await uploadImage(req.files.image.tempFilePath);
+            // nuevoNino.image = {
+            //     public_id: imageUpload.public_id,
+            //     secure_url: imageUpload.secure_url,
+            // };
 
 
             // Crear el token del Niño
@@ -83,8 +124,15 @@ const registrarNino = async (req, res) => {
             const token = nuevoNino.crearToken();
 
             // Email del Tutor
-            const tutorEmail = await Tutor.findById(id).select('Email_tutor').lean();
+            const tutor = await Tutor.findById(id).select('Email_tutor').lean();
+            //console.log("tutor:", tutor);
+            const tutorEmail = tutor ? tutor.Email_tutor : null;
 
+            //console.log("EMAIL:", tutorEmail);
+
+            if (!tutorEmail) {
+                return res.status(400).json({ msg: "No se pudo obtener el correo electrónico del tutor" });
+            }
             // Invocar la función para el envío del correo
             await sendMail_confirmNino(tutorEmail, token, Nombre_nino);
 
@@ -92,7 +140,7 @@ const registrarNino = async (req, res) => {
             await nuevoNino.save();
 
             // Enviar la respuesta
-            res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+            res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar la cuenta" });
 
         } catch (error) {
             console.error(error);

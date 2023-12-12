@@ -23,10 +23,10 @@ const NinoSchema = new Schema({
         type: String,
         required:true
     },
-    image:{
-        public_id:String,
-        secure_url:String
-    },
+    // image:{
+    //     public_id:String,
+    //     secure_url:String
+    // },
     tutor:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Tutor',

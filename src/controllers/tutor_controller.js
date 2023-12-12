@@ -14,7 +14,8 @@ const nuevoPasswordValidations = [
 ];
 const tutorRoles = ["Padre", "Madre", "Familiar", "Otros"];
 const validar = [
-    body('Nombre_tutor'),
+    body('Nombre_tutor')
+        .isLength({ min: 2, max: 15 }).withMessage('El nombre debe tener entre 2 y 15 caracteres'),
     body('Rol_tutor')
         .custom((value) => {
             if (!tutorRoles.includes(value)) {
