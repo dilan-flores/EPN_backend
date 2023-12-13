@@ -54,7 +54,7 @@ const sendMail_confirmNino = async(userMail,token,nino)=>{
     html: `
     <h1>Verificación de cuenta de nin@ (${nino})</h1>
     <hr>
-    <a href="http://localhost:3000/api/nino/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <a href="http://localhost:3000/api/nin@s/confirmar/${token}">Clic para confirmar tu cuenta</a>
     <hr>
     <footer>Bienvenido!!</footer>
     `

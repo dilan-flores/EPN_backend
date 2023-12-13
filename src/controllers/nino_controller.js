@@ -2,8 +2,10 @@
 import Nino from "../models/Nino.js"
 //, sendMailToRecoveryPassword_Nino 
 import { sendMail_confirmNino } from "../config/nodemailer.js"
-import { uploadImage, deleteImage } from "../config/cloudinary.js"
-import fs from "fs-extra"//manipulación de directorios e imágenes en cloudinary
+import generarJWT from "../helpers/crearJWT.js"
+import mongoose from "mongoose";
+//import { uploadImage, deleteImage } from "../config/cloudinary.js"
+//import fs from "fs-extra"//manipulación de directorios e imágenes en cloudinary
 
 import jwt from 'jsonwebtoken'
 import Tutor from '../models/Tutor.js'
@@ -143,7 +145,7 @@ const registrarNino = async (req, res) => {
             res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar la cuenta" });
 
         } catch (error) {
-            console.error(error);
+            console.error('Error durante el registro:', error);
             res.status(500).json({ msg: 'Error del servidor' });
         }
     } else {
@@ -151,17 +153,71 @@ const registrarNino = async (req, res) => {
     }
 }
 
+const confirmCuenta = async (req, res) => {
+    // Validar el token del correo
+    if (!(req.params.token)) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Verificar si en base al token existe el nino
+    const NinoBDD = await Nino.findOne({ token: req.params.token })
+    // Validar si el token ya fue seteado al null
+    if (!NinoBDD?.token) return res.status(404).json({ msg: "La cuenta ya ha sido confirmada" })
+    // Setear a null el token 
+    NinoBDD.token = null
+    // cambiar a true la configuración de la cuenta
+    NinoBDD.confirm_tutor = true
+    // Guardar cambios en BDD
+    await NinoBDD.save()
+    // Presentar mensaje de confirmación
+    res.status(200).json({ msg: "Token confirmado, ya puedes iniciar sesión" })
+}
+
+const loginNino = async (req, res) => {
+    // Capturar los datos del requests
+    const { Usuario_nino, Password_nino } = req.body
+    // Vallidación de campos vacíos
+    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Obtener el niño en base al usuario
+    const NinoBDD = await Nino.findOne({ Usuario_nino }).select("-token -updatedAt -status -__v")
+    // Validar si existe el niño
+    if (NinoBDD?.confirm_tutor === false) return res.status(403).json({ msg: "Lo sentimos, el tutor debe verificar su correo para confirmar la cuenta" })
+    // Verificar si existe el niño
+    if (!NinoBDD) return res.status(404).json({ msg: "Lo sentimos, el niño no se encuentra registrado" })
+    // Validar si el password del request es el mismo de la BDD
+    const verificarPassword = await NinoBDD.matchPassword(Password_nino)
+    if (!verificarPassword) return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" })
+    const token = generarJWT(NinoBDD._id)
+    // Desestructurar la información del Nino; Mandar solo algunos campos 
+    const { Nombre_nino, FN_nino, _id } = NinoBDD
+    // Formatear la fecha en el niño
+    const formattedFN_nino = new Date(NinoBDD.FN_nino).toLocaleDateString();
+    // Presentación de datos
+    res.status(200).json({
+        token,
+        _id,
+        Nombre_nino,
+        FN_nino: formattedFN_nino,
+        Usuario_nino
+    })
+}
 
 const perfilNino = async (req, res) => {
+    // Se obtiene el ID del niño que ingresó al sistema
     const { id } = req.params;
     try {
-        const nino = await Nino.findById(id).select('-createdAt -updatedAt -__v -id')
-
+        // Validar ID en DBB Niño
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
+        // Obtener información del niño en base al ID
+        const nino = await Nino.findById(id).select("-Password_nino -token -updatedAt -status -confirm_tutor -tutor -createdAt -__v");
+        // Validar si existe el niño
         if (!nino) {
-            return res.status(404).json({ msg: `Elnino con ID ${id} no fue encontrado` });
+            return res.status(404).json({ msg: `El niño con ID ${id} no fue encontrado` });
         }
-
-        res.status(200).json(nino);
+        // Crear un nuevo objeto con la fecha formateada
+        const ninoFormateado = {
+            ...nino.toObject(),
+            FN_nino: new Date(nino.FN_nino).toLocaleDateString(),
+        };
+        // Mostrar los datos del niño
+        res.status(200).json(ninoFormateado);
     } catch (error) {
         res.status(500).json({ msg: 'Error al obtener información del niño', error });
     }
@@ -250,6 +306,8 @@ const eliminarNino = async (req, res) => {
 export {
     renderAllNino,
     registrarNino,
+    confirmCuenta,
+    loginNino,
     perfilNino,
     actualizarNino,
     eliminarNino

@@ -8,10 +8,15 @@ import verificarAutenticacion from '../middlewares/autenticacion.js'
 import{
     renderAllNino,
     registrarNino,
+    confirmCuenta,
+    loginNino,
     perfilNino,
     actualizarNino,
     eliminarNino
 }from "../controllers/nino_controller.js"
+
+router.post('/nin@s/login',loginNino);
+router.get("/nin@s/confirmar/:token", confirmCuenta);
 
 // Rutas privadas
 router.get('/nin@s',verificarAutenticacion,renderAllNino);
