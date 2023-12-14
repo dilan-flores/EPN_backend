@@ -15,7 +15,7 @@ const TutorSchema = new Schema({
         type: String,
         required: true,
         trim: true,
-        enum: tutorRoles,
+        enum: tutorRoles
     },
     Celular_tutor: {
         type: String,
