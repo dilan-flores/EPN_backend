@@ -12,7 +12,8 @@ import{
     loginNino,
     perfilNino,
     actualizarNino,
-    eliminarNino
+    eliminarNino,
+    logoutNino
 }from "../controllers/nino_controller.js"
 
 router.post('/nin@s/login',loginNino);
@@ -24,4 +25,5 @@ router.get('/nin@s/:id',verificarAutenticacion,perfilNino);
 router.post('/nin@s/registro',verificarAutenticacion,registrarNino);
 router.put('/nin@s/actualizar/:id',verificarAutenticacion,actualizarNino);
 router.delete('/nin@s/eliminar/:id',verificarAutenticacion,eliminarNino);
+router.post('/nin@s/logout', verificarAutenticacion,logoutNino);
 export default router

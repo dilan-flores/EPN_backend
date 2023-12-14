@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import routerTutor from './routers/tutor_routes.js'
 import routerNino from './routers/nino_routes.js'
+import routerAdmin from './routers/admin_routes.js'
 
 // Cierre de sesión
 import session from 'express-session';
@@ -53,6 +54,7 @@ app.use(passport.session());
 // Rutas
 app.use('/api', routerTutor)
 app.use('/api', routerNino)
+app.use('/api', routerAdmin)
 
 // Manejo de una ruta que no sea encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))

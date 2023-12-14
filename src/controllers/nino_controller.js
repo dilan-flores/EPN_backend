@@ -35,6 +35,25 @@ const validar = [
         .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
 ];
 
+const validarActualizacion = [
+    body('Nombre_nino')
+        .isLength({ min: 2, max: 15 }).optional().withMessage('La contraseña debe tener entre 2 y 15 caracteres'),
+
+    body('FN_nino')
+        .optional()
+        .custom(value => {
+            if (!moment(value, 'YYYY-MM-DD', true).isValid()) {
+                throw new Error('La fecha de nacimiento debe tener un formato de fecha válido (ejemplo: "2012-11-30")');
+            }
+            return true;
+        }),
+
+    body('Usuario_nino')
+        .isLength({ min: 2, max: 15 }).optional().withMessage('La contraseña debe tener entre 2 y 15 caracteres')
+        .trim(),
+];
+
+
 
 const renderAllNino = async (req, res) => {
     if (req.headers.authorization) {
@@ -225,53 +244,55 @@ const perfilNino = async (req, res) => {
 
 const actualizarNino = async (req, res) => {
     const { id } = req.params;
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
-    }
-
-    const { image } = req.files || {};
+    // const { image } = req.files || {};
     const { Nombre_nino, FN_nino, Usuario_nino } = req.body;
-
-    if (!image && Object.values(req.body).includes("")) {
-        return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
-    }
-
+    // if (!image && Object.values(req.body).includes("")) {
+    //     return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    // }
     try {
-        const ninoBDD = await Nino.findById(id);
-
-        if (image) {
-            // Actualización de la imagen
-            if (!image) return res.send("Se requiere una imagen");
-
-            // Eliminar la imagen anterior de cloudinary
-            await deleteImage(ninoBDD.image.public_id);
-
-            // Cargar nueva imagen
-            const imageUpload = await uploadImage(image.tempFilePath);
-
-            // Actualizar en la BDD
-            await Nino.findByIdAndUpdate(id, {
-                Nombre_nino: Nombre_nino || ninoBDD.Nombre_nino,
-                FN_nino: FN_nino || ninoBDD.FN_nino,
-                Usuario_nino: Usuario_nino || ninoBDD.Usuario_nino,
-                image: {
-                    public_id: imageUpload.public_id,
-                    secure_url: imageUpload.secure_url,
-                },
-            });
-
-            // Eliminar la imagen temporal
-            await fs.unlink(image.tempFilePath);
-        } else {
-            // Actualización de los campos sin la imagen
-            await Nino.findByIdAndUpdate(id, {
-                Nombre_nino: Nombre_nino || ninoBDD.Nombre_nino,
-                FN_nino: FN_nino || ninoBDD.FN_nino,
-                Usuario_nino: Usuario_nino || ninoBDD.Usuario_nino,
-            });
+        // Ejecutar las validaciones
+        await Promise.all(validarActualizacion.map(validation => validation.run(req)));
+        // Obtener los resultados de la validación
+        const errors = validationResult(req);
+        // Verificar si hay errores
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
         }
+        const ninoBDD = await Nino.findById(id);
+        // if (image) {
+        //     // Actualización de la imagen
+        //     if (!image) return res.send("Se requiere una imagen");
 
+        //     // Eliminar la imagen anterior de cloudinary
+        //     await deleteImage(ninoBDD.image.public_id);
+
+        //     // Cargar nueva imagen
+        //     const imageUpload = await uploadImage(image.tempFilePath);
+
+        //     // Actualizar en la BDD
+        //     await Nino.findByIdAndUpdate(id, {
+        //         Nombre_nino: Nombre_nino || ninoBDD.Nombre_nino,
+        //         FN_nino: FN_nino || ninoBDD.FN_nino,
+        //         Usuario_nino: Usuario_nino || ninoBDD.Usuario_nino,
+        //         image: {
+        //             public_id: imageUpload.public_id,
+        //             secure_url: imageUpload.secure_url,
+        //         },
+        //     });
+
+        //     // Eliminar la imagen temporal
+        //     await fs.unlink(image.tempFilePath);
+        // } else {
+        // Actualización de los campos sin la imagen
+        await Nino.findByIdAndUpdate(id, {
+            Nombre_nino: Nombre_nino || ninoBDD.Nombre_nino,
+            FN_nino: FN_nino || ninoBDD.FN_nino,
+            Usuario_nino: Usuario_nino || ninoBDD.Usuario_nino,
+        });
+        //}
         res.status(200).json({ msg: "Actualización exitosa del niño" });
     } catch (error) {
         console.error("Error en la actualización del niño:", error);
@@ -284,7 +305,7 @@ const eliminarNino = async (req, res) => {
 
     try {
         if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(404).json({ msg: `Lo sentimos, no existe el Niñ@ ${id}` });
+            return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
         }
 
         // Eliminar la imagen de cloudinary y al niño de la base de datos
@@ -294,7 +315,7 @@ const eliminarNino = async (req, res) => {
             return res.status(404).json({ msg: `Lo sentimos, no existe el Niñ@ ${id}` });
         }
 
-        await deleteImage(nino.image.public_id);
+        //await deleteImage(nino.image.public_id);
 
         res.status(200).json({ msg: "Eliminación exitosa del niño" });
     } catch (error) {
@@ -303,6 +324,12 @@ const eliminarNino = async (req, res) => {
     }
 };
 
+// nino_controller.js
+const logoutNino = async (req, res) => {
+    req.logout();  // Passport.js proporciona el método 'logout()' para cerrar sesión
+    res.status(200).json({ msg: "Sesión cerrada exitosamente" });
+}
+
 export {
     renderAllNino,
     registrarNino,
@@ -310,5 +337,6 @@ export {
     loginNino,
     perfilNino,
     actualizarNino,
-    eliminarNino
+    eliminarNino,
+    logoutNino
 }

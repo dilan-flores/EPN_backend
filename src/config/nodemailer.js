@@ -62,8 +62,25 @@ const sendMail_confirmNino = async(userMail,token,nino)=>{
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
 
+const sendMailToAdmin = async(userMail,token)=>{
+    let info = await transport.sendMail({
+    from: 'dilanflores.21@gmail.com',
+    to: userMail,
+    subject: "Verifica tu cuenta de correo electrónico",
+    html: `
+    <h1>ADMIN</h1>
+    <hr>
+    <a href="http://localhost:3000/api/admin/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <hr>
+    <footer>..........</footer>
+    `
+    });
+    console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
+}
+
 export {
     sendMailToUser,
     sendMailToRecoveryPassword,
-    sendMail_confirmNino
+    sendMail_confirmNino,
+    sendMailToAdmin
 }

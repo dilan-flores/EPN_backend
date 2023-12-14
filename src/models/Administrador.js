@@ -1,4 +1,6 @@
-import mongoose, {Schema,model} from 'mongoose'
+import {Schema,model} from 'mongoose'
+// Encriptar el password del Admin
+import bcrypt from "bcryptjs"
 
 const AdminSchema = new Schema({
     Nombre_admin:{
