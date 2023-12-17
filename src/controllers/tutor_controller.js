@@ -4,7 +4,7 @@ import { sendMailToUser, sendMailToRecoveryPassword } from "../config/nodemailer
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
 import { body, validationResult } from 'express-validator';
-
+import jwt from 'jsonwebtoken'
 
 const nuevoPasswordValidations = [
     body('password')
@@ -15,7 +15,7 @@ const nuevoPasswordValidations = [
 const tutorRoles = ["Padre", "Madre", "Familiar", "Otros"];
 const validar = [
     body('Nombre_tutor')
-        .isLength({ min: 2, max: 15 }).withMessage('El nombre debe tener entre 2 y 15 caracteres'),
+        .isLength({ min: 2, max: 30 }).withMessage('El nombre debe tener entre 2 y 30 caracteres'),
     body('Rol_tutor')
         .custom((value) => {
             if (!tutorRoles.includes(value)) {
@@ -120,16 +120,41 @@ const confirmEmail = async (req, res) => {
 }
 
 const perfilTutor = async (req, res) => {
-    // Se obtiene el ID del tutor que ingresó al sistema
-    const { id } = req.params
-    // Validar ID en DBB tutor
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
-    // Obtener información tutor en base al ID
-    const tutorBDD = await Tutor.findById(id).select("-Password_tutor -confirmEmail -token -status -updatedAt -__v ")
-    // Validar si existe el tutor
-    if (!tutorBDD) return res.status(404).json({ msg: `Lo sentimos, no existe el tutor ${id}` })
-    // Mostrar los datos del tutor
-    res.status(200).json({ msg: tutorBDD })
+    if (req.headers.authorization) {
+        try {
+            const { authorization } = req.headers;
+            const { id: tutorId } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+
+            // Verificar si el token corresponde a un tutor en la base de datos
+            const tutorToken = await Tutor.findOne({ _id: tutorId });
+            if (!tutorToken) {
+                // Si no se encuentra un tutor con el ID proporcionados
+                return res.status(401).json({ msg: 'No autorizado. Solo un usuario Tutor' });
+            }
+
+            // Se obtiene el ID del tutor que ingresó al sistema
+            const { id } = req.params
+
+            // Verificar si el id del tutor que ingresó al sistema es igual al id optenido en el endpoint
+            if (id === tutorId) {
+                // Validar ID en DBB tutor
+                if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
+                // Obtener información tutor en base al ID
+                const tutorBDD = await Tutor.findById(id).select("-Password_tutor -confirmEmail -token -status -updatedAt -__v ")
+                // Validar si existe el tutor
+                if (!tutorBDD) return res.status(404).json({ msg: `Lo sentimos, no existe el tutor con id: ${id}` })
+                // Mostrar los datos del tutor
+                res.status(200).json({ msg: tutorBDD })
+            }else{
+                res.status(401).json({ msg: 'Tutor no autorizado' });
+            }
+        } catch (error) {
+            console.error('Error durante el registro:', error);
+            res.status(500).json({ msg: 'Error del servidor' });
+        }
+    } else {
+        res.status(401).json({ msg: 'No autorizado' });
+    }
 }
 
 // const perfil =(req,res)=>{

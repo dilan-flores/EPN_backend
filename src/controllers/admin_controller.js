@@ -3,38 +3,39 @@ import Admin from "../models/Administrador.js"
 import { sendMailToAdmin } from "../config/nodemailer.js"
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
+import jwt from 'jsonwebtoken'
 
 const registrarAdmin = async (req, res) => {
-    try {
-        // Validación de campos vacíos
-        if (Object.values(req.body).some(value => value === "")) {
-            return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
-        }
-        // Capturar los datos del body de la petición
-        const { Email_admin, Password_admin } = req.body;
-        // Validación de existencia del mail
-        const verificarEmailBDD = await Admin.findOne({ Email_admin });
-        if (verificarEmailBDD) {
-            return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
-        }
-        // Crear la instancia del modelo
-        const nuevoAdmin = new Admin(req.body);
-        // Encriptar el password del Administrador
-        nuevoAdmin.Password_admin = await nuevoAdmin.encrypPassword(Password_admin);
-        // Crear el token del Administrador
-        nuevoAdmin.crearToken();
-        // Crear el token del Administrador
-        const token = nuevoAdmin.crearToken();
-        // Invocar la función para el envío del correo
-        await sendMailToAdmin(Email_admin, token);
-        // Guardar en la base de datos
-        await nuevoAdmin.save();
-        // Enviar la respuesta
-        res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
-    } catch (error) {
-        console.error('Error durante el registro:', error);
-        res.status(500).json({ msg: 'Ocurrió un error durante el registro' });
-    }
+            try {
+                // Validación de campos vacíos
+                if (Object.values(req.body).some(value => value === "")) {
+                    return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+                }
+                // Capturar los datos del body de la petición
+                const { Email_admin, Password_admin } = req.body;
+                // Validación de existencia del mail
+                const verificarEmailBDD = await Admin.findOne({ Email_admin });
+                if (verificarEmailBDD) {
+                    return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+                }
+                // Crear la instancia del modelo
+                const nuevoAdmin = new Admin(req.body);
+                // Encriptar el password del Administrador
+                nuevoAdmin.Password_admin = await nuevoAdmin.encrypPassword(Password_admin);
+                // Crear el token del Administrador
+                nuevoAdmin.crearToken();
+                // Crear el token del Administrador
+                const token = nuevoAdmin.crearToken();
+                // Invocar la función para el envío del correo
+                await sendMailToAdmin(Email_admin, token);
+                // Guardar en la base de datos
+                await nuevoAdmin.save();
+                // Enviar la respuesta
+                res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+            } catch (error) {
+                console.error('Error durante el registro:', error);
+                res.status(500).json({ msg: 'Ocurrió un error durante el registro' });
+            }
 };
 
 const confirmEmailAdmin = async (req, res) => {
