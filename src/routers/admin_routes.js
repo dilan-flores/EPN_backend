@@ -8,11 +8,21 @@ import verificarAutenticacion from '../middlewares/autenticacion.js'
 import {
     registrarAdmin,
     confirmEmailAdmin,
-    loginAdmin
+    loginAdmin,
+    recuperarPasswordAdmin,
+    comprobarTokenPaswordAdmin,
+    nuevoPasswordAdmin,
+    logoutAdmin
 }from "../controllers/admin_controller.js";
 
 router.post('/admin/login',loginAdmin);
 router.post('/admin/registro',registrarAdmin);
 router.get("/admin/confirmar/:token", confirmEmailAdmin);
+router.get("/admin/recuperar-password", recuperarPasswordAdmin);
+router.get("/admin/recuperar-password/:token", comprobarTokenPaswordAdmin);
+router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
+
+// Rutas privadas
+router.post('/admin/logout', verificarAutenticacion,logoutAdmin);
 
 export default router

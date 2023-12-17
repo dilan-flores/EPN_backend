@@ -1,9 +1,17 @@
 //Importar el modelo Niño
 import Admin from "../models/Administrador.js"
-import { sendMailToAdmin } from "../config/nodemailer.js"
+import { sendMailToAdmin, sendMailToRecoveryPasswordAdmin } from "../config/nodemailer.js"
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
+import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken'
+
+const nuevoPasswordValidations = [
+    body('password')
+        .notEmpty().withMessage('La contraseña es obligatoria')
+        .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
+        .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
+];
 
 const registrarAdmin = async (req, res) => {
             try {
@@ -81,8 +89,95 @@ const loginAdmin = async (req, res) => {
     })
 }
 
+const recuperarPasswordAdmin = async (req, res) => {
+    // Se obtiene el email del Administrador
+    const { Email_admin } = req.body
+    // Validación de campos vacíos
+    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    // Obtener el Administrador en base al email
+    const adminBDD = await Admin.findOne({ Email_admin })
+    // Validación de existencia de Administrador
+    if (!adminBDD) return res.status(404).json({ msg: "Lo sentimos, el admistrador no se encuentra registrado" })
+    // creación del token
+    const token = adminBDD.crearToken()
+    // Establecer el token en el administrador obtenido previamente
+    adminBDD.token = token
+    // Enviar el email de recuperación
+    await sendMailToRecoveryPasswordAdmin(Email_admin, token)
+    // Guardar los cambio en BDD
+    await adminBDD.save()
+    // Presentar mensajes al Administrador
+    res.status(200).json({ msg: "Revisa tu correo electrónico para reestablecer tu cuenta" })
+}
+
+const comprobarTokenPaswordAdmin = async (req, res) => {
+    // Validar el token
+    if (!(req.params.token)) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Obtener el Administrador en base al token
+    const adminBDD = await Admin.findOne({ token: req.params.token })
+    // Validación si existe el Administrador
+    if (adminBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Guardar en BDD
+    await adminBDD.save()
+    // Presentar mensaje al Administrador
+    res.status(200).json({ msg: "Token confirmado, ya puedes crear tu nuevo password" })
+}
+
+const nuevoPasswordAdmin = async (req, res) => {
+    try {
+        // Validación de campos vacíos
+        if (Object.values(req.body).some(value => value === "")) {
+            return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+        }
+        // Validar coincidencia de los passwords
+        const { password, confirmpassword } = req.body;
+        if (password !== confirmpassword) {
+            return res.status(404).json({ msg: "Lo sentimos, los passwords no coinciden" });
+        }
+        // Aplicar validaciones de nuevoPassword
+        await Promise.all(nuevoPasswordValidations.map(validation => validation.run(req)));
+        // Obtener los resultados de la validación
+        const errors = validationResult(req);
+        // Verificar si hay errores
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        // Obtener los datos del Administrador en base al token
+        const adminBDD = await Admin.findOne({ token: req.params.token });
+        // Validar la existencia de Administrador y que el token no sea null o indefinido
+        if (!adminBDD || adminBDD.token === null) {
+            // console.log("Valor de tutorBDD.token:", tutorBDD.token);
+            // console.log("Valor de req.params.token:", req.params.token);
+            return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+        }
+        // Setear el token nuevamente a null
+        adminBDD.token = null;
+        // Encriptar el nuevo password
+        adminBDD.Password_admin = await adminBDD.encrypPassword(password);
+        // Guardar en BDD
+        await adminBDD.save();
+        // Mostrar mensaje al Administrador
+        res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" });
+    } catch (error) {
+        console.error("Error al cambiar la contraseña:", error);
+        res.status(500).json({ msg: "Ocurrió un error al cambiar la contraseña" });
+    }
+};
+
+const logoutAdmin = async (req, res) => {
+    req.logout((err) => {
+        if (err) return res.status(500).json({ msg: "Ocurrió un error al cerrar sesión" });
+
+        return res.status(200).json({ msg: "Sesión cerrada exitosamente" });
+    });
+}
+
 export {
     registrarAdmin,
     confirmEmailAdmin,
-    loginAdmin
+    loginAdmin,
+    recuperarPasswordAdmin,
+    comprobarTokenPaswordAdmin,
+    nuevoPasswordAdmin,
+    logoutAdmin
 }

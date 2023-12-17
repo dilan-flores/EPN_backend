@@ -78,9 +78,27 @@ const sendMailToAdmin = async(userMail,token)=>{
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
 
+const sendMailToRecoveryPasswordAdmin = async(userMail,token)=>{
+    let info = await transport.sendMail({
+    from: 'dilanflores.21@gmail.com',
+    to: userMail,
+    subject: "Correo para reestablecer tu contraseña",
+    html: `
+    <h1>Sistema de gestión (Programación niños 👦👧)</h1>
+    <h3>ADMINISTRADOR</h3>
+    <hr>
+    <a href="http://localhost:3000/api/admin/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
+    <hr>
+    <footer>Bienvenido!!</footer>
+    `
+    });
+    console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
+}
+
 export {
     sendMailToUser,
     sendMailToRecoveryPassword,
     sendMail_confirmNino,
-    sendMailToAdmin
+    sendMailToAdmin,
+    sendMailToRecoveryPasswordAdmin
 }

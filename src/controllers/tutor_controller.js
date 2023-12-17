@@ -187,7 +187,7 @@ const recuperarPassword = async (req, res) => {
     if (!tutorBDD) return res.status(404).json({ msg: "Lo sentimos, el tutor no se encuentra registrado" })
     // creación del token
     const token = tutorBDD.crearToken()
-    // Establecer el token en el tutor optenido previamente
+    // Establecer el token en el tutor obtenido previamente
     tutorBDD.token = token
     // Enviar el email de recuperación
     await sendMailToRecoveryPassword(Email_tutor, token)
@@ -233,8 +233,6 @@ const nuevoPassword = async (req, res) => {
         const tutorBDD = await Tutor.findOne({ token: req.params.token });
         // Validar la existencia de tutor y que el token no sea null o undefined
         if (!tutorBDD || tutorBDD.token === null) {
-            console.log("Valor de tutorBDD.token:", tutorBDD.token);
-            console.log("Valor de req.params.token:", req.params.token);
             return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
         }
         // Setear el token nuevamente a null
