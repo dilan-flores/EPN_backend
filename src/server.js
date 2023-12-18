@@ -5,6 +5,7 @@ import cors from 'cors';
 import routerTutor from './routers/tutor_routes.js'
 import routerNino from './routers/nino_routes.js'
 import routerAdmin from './routers/admin_routes.js'
+import routerInscripcion from './routers/inscripcion_routes.js'
 import routerActividad from './routers/actividad_routes.js'
 
 // Cierre de sesión
@@ -57,7 +58,7 @@ app.use('/api', routerTutor)
 app.use('/api', routerNino)
 app.use('/api', routerAdmin)
 app.use('/api', routerActividad)
-
+app.use('/api', routerInscripcion)
 // Manejo de una ruta que no sea encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
 // Archivos estáticos

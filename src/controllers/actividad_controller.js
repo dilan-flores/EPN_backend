@@ -1,6 +1,7 @@
 //Importar el modelo Actividad
 import Actividad from "../models/Actividad.js"
 import Admin from "../models/Administrador.js"
+import Tutor from "../models/Tutor.js"
 import mongoose from "mongoose";
 import jwt from 'jsonwebtoken'
 import { body, validationResult } from 'express-validator';
@@ -21,6 +22,38 @@ const validar = [
             return true;
         })
 ];
+
+const renderAllActividades = async (req, res) => {
+    try {
+        // Verificar si hay un token de autorización en las cabeceras
+        if (req.headers.authorization) {
+            const { authorization } = req.headers;
+            const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+            // Verificar si el token corresponde a un tutor o a un administrador en la base de datos
+            const tutorToken = await Tutor.findOne({ _id: id });
+            const adminToken = await Admin.findOne({ _id: id });
+            if (!tutorToken && !adminToken) {
+                // Si no se encuentra un tutor ni un administrador con el ID proporcionado
+                return res.status(401).json({ msg: 'No autorizado. Solo un usuario Tutor o Administrador' });
+            }
+        } else {
+            // Si no hay un token de autorización en las cabeceras
+            return res.status(401).json({ msg: 'No autorizado' });
+        }
+        // Obtener información de todas las actividades disponibles
+        const actividades = await Actividad.find({}).select("-createdAt -updatedAt -__v").lean();
+        // Si no existen registros de actividades
+        if (actividades.length === 0) {
+            return res.status(200).json({ msg: 'No hay actividades registradas' });
+        }
+        // Respuesta con información de actividades
+        res.status(200).json({ actividades });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+};
+
 
 const registrarActividad = async (req, res) => {
     if (req.headers.authorization) {
@@ -52,7 +85,7 @@ const registrarActividad = async (req, res) => {
                 return res.status(422).json({ errors: errors.array() });
             }
 
-            // Validación de existencia del Usuario niño
+            // Validación de existencia de actividad
             const verificarActividadBDD = await Actividad.findOne({ Nombre_act });
             if (verificarActividadBDD) {
                 return res.status(400).json({ msg: "La actividad ya se encuentra registrada" });
@@ -204,6 +237,7 @@ const eliminarActividad = async (req, res) => {
 
 
 export {
+    renderAllActividades,
     registrarActividad,
     visualizarActividad,
     actualizarActividad,

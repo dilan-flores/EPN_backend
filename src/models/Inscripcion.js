@@ -1,15 +1,15 @@
 import mongoose, {Schema,model} from 'mongoose'
 
 const InscripcionSchema = new Schema({
-    Tutor:{
+    tutor:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Tutor'
     },
-    Nino:{
+    nino:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Nino'
     },
-    Actividad:{
+    actividad:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Actividad'
     }

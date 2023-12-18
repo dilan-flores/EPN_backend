@@ -12,84 +12,113 @@ const transport = nodemailer.createTransport({
     }
 })
 
-// Enviar correo con objeto de transporte definido
-const sendMailToUser = async(userMail,token)=>{
+// TUTOR
+const sendMailToUser = async(userMail,token)=>{ // Enviar correo de verificación de cuenta: Tutor
     let info = await transport.sendMail({
     from: 'dilanflores.21@gmail.com',
     to: userMail,
     subject: "Verifica tu cuenta de correo electrónico",
     html: `
-    <h1>Sistema de gestión (Programación niños 👦👧)</h1>
+    <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+    <h3>Usuario tutor, verifica tu cuenta para iniciar sesión</h3>
     <hr>
+    <br>
     <a href="http://localhost:3000/api/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <br>
     <hr>
     <footer>Bienvenido!!</footer>
     `
     });
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
-
-const sendMailToRecoveryPassword = async(userMail,token)=>{
+const sendMailToRecoveryPassword = async(userMail,token)=>{// Enviar correo para reestablecer contraseña: tutor
     let info = await transport.sendMail({
     from: 'dilanflores.21@gmail.com',
     to: userMail,
     subject: "Correo para reestablecer tu contraseña",
     html: `
-    <h1>Sistema de gestión (Programación niños 👦👧)</h1>
+    <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+    <h3>Reestablece tu contraseña</h3>
     <hr>
+    <br>
     <a href="http://localhost:3000/api/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
+    <br>
     <hr>
     <footer>Bienvenido!!</footer>
     `
     });
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
-
-// Enviar correo para confirmar la cuenta de Niño
+// NIÑO
 const sendMail_confirmNino = async(userMail,token,nino)=>{
     let info = await transport.sendMail({
     from: 'dilanflores.21@gmail.com',
     to: userMail,
     subject: "Verifica la cuenta",
     html: `
-    <h1>Verificación de cuenta de nin@ (${nino})</h1>
+    <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+    <h3>Verifica la cuenta de ${nino}</h3>
     <hr>
+    <br>
     <a href="http://localhost:3000/api/nin@s/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <br>
     <hr>
     <footer>Bienvenido!!</footer>
     `
     });
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
-
+const sendMailToRecoveryPasswordNino = async(userMail,token,nino)=>{
+    let info = await transport.sendMail({
+    from: 'dilanflores.21@gmail.com',
+    to: userMail,
+    subject: "Correo para reestablecer tu contraseña",
+    html: `
+      <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+      <h3>Reestablece la contraseña de ${nino}</h3>
+      <hr>
+      <br>
+      <a href="http://localhost:3000/api/nin@s/recuperar-password/${token}">Clic para restablecer tu contraseña</a>
+      <br>
+      <hr>
+      <footer>.............</footer>
+    `
+    });
+    console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
+}
+// ADMINISTRADOR
 const sendMailToAdmin = async(userMail,token)=>{
     let info = await transport.sendMail({
     from: 'dilanflores.21@gmail.com',
     to: userMail,
     subject: "Verifica tu cuenta de correo electrónico",
     html: `
-    <h1>ADMIN</h1>
+    <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+    <h1>Usuario administrador, verifica tu cuenta para iniciar sesión</h1>
     <hr>
+    <br>
     <a href="http://localhost:3000/api/admin/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <br>
     <hr>
-    <footer>..........</footer>
+    <footer>Bienvenido!!</footer>
     `
     });
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
 }
-
 const sendMailToRecoveryPasswordAdmin = async(userMail,token)=>{
     let info = await transport.sendMail({
     from: 'dilanflores.21@gmail.com',
     to: userMail,
     subject: "Correo para reestablecer tu contraseña",
     html: `
-    <h1>Sistema de gestión (Programación niños 👦👧)</h1>
-    <h3>ADMINISTRADOR</h3>
+    <h1>Sistema de gestión (Programación niñ@s 👦👧)</h1>
+    <h3>Reestablece tu contraseña</h3>
     <hr>
+    <br>
     <a href="http://localhost:3000/api/admin/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
+    <br>
     <hr>
-    <footer>Bienvenido!!</footer>
+    <footer>..........</footer>
     `
     });
     console.log("Mensaje enviado satisfactoriamente: ", info.messageId);
@@ -100,5 +129,6 @@ export {
     sendMailToRecoveryPassword,
     sendMail_confirmNino,
     sendMailToAdmin,
-    sendMailToRecoveryPasswordAdmin
+    sendMailToRecoveryPasswordAdmin,
+    sendMailToRecoveryPasswordNino
 }

@@ -1,7 +1,7 @@
 //Importar el modelo Niño
 import Nino from "../models/Nino.js"
 //, sendMailToRecoveryPassword_Nino 
-import { sendMail_confirmNino } from "../config/nodemailer.js"
+import { sendMail_confirmNino, sendMailToRecoveryPasswordNino } from "../config/nodemailer.js"
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
 //import { uploadImage, deleteImage } from "../config/cloudinary.js"
@@ -31,6 +31,13 @@ const validar = [
 
     body('Password_nino')
         .notEmpty().withMessage('La contraseña del niño es obligatoria')
+        .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
+        .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
+];
+
+const nuevoPasswordValidations = [
+    body('password')
+        .notEmpty().withMessage('La contraseña es obligatoria')
         .isLength({ min: 8, max: 15 }).withMessage('La contraseña debe tener entre 8 y 15 caracteres')
         .matches(/\d/).withMessage('La contraseña debe contener al menos un número'),
 ];
@@ -401,7 +408,111 @@ const eliminarNino = async (req, res) => {
     }
 };
 
-// nino_controller.js
+// Recuperar contraseña: Controla Tutor
+const recuperarPasswordNino = async (req, res) => {
+    if (req.headers.authorization) {
+        try {
+            const { authorization } = req.headers;
+            const { id: tutorId } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+
+            // Se obtiene el email del Nino
+            const { Usuario_nino } = req.body
+            // Validación de campos vacíos
+            if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+            // Obtener el Nino en base al Usuario
+            const ninoBDD = await Nino.findOne({ Usuario_nino })
+            // Validación de existencia de niño
+            if (!ninoBDD) return res.status(404).json({ msg: "Lo sentimos, el niño no se encuentra registrado" })
+            try {
+                // Verificar si el tutor está relacionado con el niño
+                if (tutorId === ninoBDD.tutor.toString()) {
+                    console.log("ID de Tutor: ", ninoBDD.tutor.toString())
+                    // creación del token
+                    const token = ninoBDD.crearToken()
+                    // Establecer el token en el niño obtenido previamente
+                    ninoBDD.token = token
+
+                    // Obtener el Email del tutor
+                    const tutor = await Tutor.findById(tutorId).select('Email_tutor').lean();
+                    const tutorEmail = tutor ? tutor.Email_tutor : null;
+
+                    if (!tutorEmail) {
+                        return res.status(400).json({ msg: "No se pudo obtener el correo electrónico del tutor" });
+                    }
+                    // Enviar el email de recuperación
+                    await sendMailToRecoveryPasswordNino(tutorEmail, token, ninoBDD.Nombre_nino)
+                    // Guardar los cambio en BDD
+                    await ninoBDD.save()
+                    // Presentar mensajes al Niño
+                    res.status(200).json({ msg: "Revisa tu correo electrónico para reestablecer la cuenta" })
+                } else {
+                    return res.status(401).json({ msg: 'No autorizado. Solo usuario Tutor autorizado' });
+                }
+            } catch (error) {
+                res.status(500).json({ msg: 'Error al obtener información del niño', error });
+            }
+        } catch (error) {
+            console.error('Error durante en el proceso:', error);
+            res.status(500).json({ msg: 'Error del servidor' });
+        }
+    } else {
+        res.status(401).json({ msg: 'No autorizado' });
+    }
+
+}
+
+const comprobarTokenPaswordNino = async (req, res) => {
+    // Validar el token
+    if (!(req.params.token)) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Obtener el Niño en base al token
+    const ninoBDD = await Nino.findOne({ token: req.params.token })
+    // Validación si existe el Niño
+    if (ninoBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    // Guardar en BDD
+    await ninoBDD.save()
+    // Presentar mensaje al Niño
+    res.status(200).json({ msg: "Token confirmado, ya puedes crear tu nuevo password" })
+}
+
+const nuevoPasswordNino = async (req, res) => {
+    try {
+        // Validación de campos vacíos
+        if (Object.values(req.body).some(value => value === "")) {
+            return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+        }
+        // Validar coincidencia de los passwords
+        const { password, confirmpassword } = req.body;
+        if (password !== confirmpassword) {
+            return res.status(404).json({ msg: "Lo sentimos, los passwords no coinciden" });
+        }
+        // Aplicar validaciones de nuevoPassword
+        await Promise.all(nuevoPasswordValidations.map(validation => validation.run(req)));
+        // Obtener los resultados de la validación
+        const errors = validationResult(req);
+        // Verificar si hay errores
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        // Obtener los datos del Niño en base al token
+        const ninoBDD = await Nino.findOne({ token: req.params.token });
+        // Validar la existencia de Niño y que el token no sea null o indefinido
+        if (!ninoBDD || ninoBDD.token === null) {
+            return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+        }
+        // Setear el token nuevamente a null
+        ninoBDD.token = null;
+        // Encriptar el nuevo password
+        ninoBDD.Password_nino = await ninoBDD.encrypPassword(password);
+        // Guardar en BDD
+        await ninoBDD.save();
+        // Mostrar mensaje al Tutor
+        res.status(200).json({ msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password" });
+    } catch (error) {
+        console.error("Error al cambiar la contraseña:", error);
+        res.status(500).json({ msg: "Ocurrió un error al cambiar la contraseña" });
+    }
+};
+
 const logoutNino = async (req, res) => {
     req.logout();  // Passport.js proporciona el método 'logout()' para cerrar sesión
     res.status(200).json({ msg: "Sesión cerrada exitosamente" });
@@ -415,5 +526,8 @@ export {
     perfilNino,
     actualizarNino,
     eliminarNino,
+    recuperarPasswordNino,
+    comprobarTokenPaswordNino,
+    nuevoPasswordNino,
     logoutNino
 }

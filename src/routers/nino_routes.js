@@ -13,6 +13,9 @@ import{
     perfilNino,
     actualizarNino,
     eliminarNino,
+    recuperarPasswordNino,
+    comprobarTokenPaswordNino,
+    nuevoPasswordNino,
     logoutNino
 }from "../controllers/nino_controller.js"
 
@@ -26,4 +29,9 @@ router.post('/nin@s/registro',verificarAutenticacion,registrarNino);
 router.put('/nin@s/actualizar/:id',verificarAutenticacion,actualizarNino);
 router.delete('/nin@s/eliminar/:id',verificarAutenticacion,eliminarNino);
 router.post('/nin@s/logout', verificarAutenticacion,logoutNino);
+router.get("/nin@/recuperar-password", verificarAutenticacion, recuperarPasswordNino);
+
+router.get("/nin@s/recuperar-password/:token", comprobarTokenPaswordNino);
+router.post("/nin@s/nuevo-password/:token", nuevoPasswordNino);
+
 export default router
