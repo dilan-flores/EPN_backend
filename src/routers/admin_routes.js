@@ -12,7 +12,8 @@ import {
     recuperarPasswordAdmin,
     comprobarTokenPaswordAdmin,
     nuevoPasswordAdmin,
-    logoutAdmin
+    logoutAdmin,
+    eliminacionCascada
 }from "../controllers/admin_controller.js";
 
 router.post('/admin/login',loginAdmin);
@@ -22,7 +23,8 @@ router.get("/admin/recuperar-password", recuperarPasswordAdmin);
 router.get("/admin/recuperar-password/:token", comprobarTokenPaswordAdmin);
 router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
 
+
 // Rutas privadas
 router.post('/admin/logout', verificarAutenticacion,logoutAdmin);
-
+router.delete('/eliminacionCascada/:tutorId', verificarAutenticacion,eliminacionCascada);
 export default router

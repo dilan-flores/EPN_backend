@@ -6,11 +6,11 @@ const router = Router()
 import verificarAutenticacion from '../middlewares/autenticacion.js'
 
 import {
-    InscripcionRegistro,
-    RenderAllInscripcion
-} from "../controllers/inscripcion_controller.js"
+    ProgresoRegistro,
+    VisualizarProgreso
+} from "../controllers/progreso_controller.js"
 
-router.post('/inscripcion/registro/:ninoId/:actividadId', verificarAutenticacion, InscripcionRegistro);
-router.get('/inscripciones/:ninoid',verificarAutenticacion, RenderAllInscripcion);
+router.post('/progreso/registro/:ActividadId', verificarAutenticacion, ProgresoRegistro);
+router.get('/progreso/:actividadID',verificarAutenticacion, VisualizarProgreso);
 
 export default router

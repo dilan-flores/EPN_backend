@@ -2,9 +2,10 @@ import mongoose, {Schema,model} from 'mongoose'
 
 const ProgresoSchema = new Schema({
     Puntuacion:{
-        type:String,
+        type:Number,
         require:true,
-        trim:true
+        trim:true,
+        default:0, // valor inicial:0
     },
     Completado:{
         type:Number,
@@ -12,11 +13,11 @@ const ProgresoSchema = new Schema({
         trim:true,
         default:0, // valor inicial:0
     },
-    Actividad:{
+    ActividadId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Actividad'
     },
-    Nino:{
+    NinoId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Nino'
     }

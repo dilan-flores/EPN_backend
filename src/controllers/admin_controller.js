@@ -1,5 +1,11 @@
-//Importar el modelo Niño
+//Importar los modelos necesarios
 import Admin from "../models/Administrador.js"
+import Tutor from "../models/Tutor.js"
+import Nino from "../models/Nino.js"
+import Inscripcion from "../models/Inscripcion.js"
+import Logros from "../models/Logro.js"
+import Progreso from "../models/Progreso.js"
+
 import { sendMailToAdmin, sendMailToRecoveryPasswordAdmin } from "../config/nodemailer.js"
 import generarJWT from "../helpers/crearJWT.js"
 import mongoose from "mongoose";
@@ -14,36 +20,36 @@ const nuevoPasswordValidations = [
 ];
 
 const registrarAdmin = async (req, res) => {
-            try {
-                // Validación de campos vacíos
-                if (Object.values(req.body).some(value => value === "")) {
-                    return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
-                }
-                // Capturar los datos del body de la petición
-                const { Email_admin, Password_admin } = req.body;
-                // Validación de existencia del mail
-                const verificarEmailBDD = await Admin.findOne({ Email_admin });
-                if (verificarEmailBDD) {
-                    return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
-                }
-                // Crear la instancia del modelo
-                const nuevoAdmin = new Admin(req.body);
-                // Encriptar el password del Administrador
-                nuevoAdmin.Password_admin = await nuevoAdmin.encrypPassword(Password_admin);
-                // Crear el token del Administrador
-                nuevoAdmin.crearToken();
-                // Crear el token del Administrador
-                const token = nuevoAdmin.crearToken();
-                // Invocar la función para el envío del correo
-                await sendMailToAdmin(Email_admin, token);
-                // Guardar en la base de datos
-                await nuevoAdmin.save();
-                // Enviar la respuesta
-                res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
-            } catch (error) {
-                console.error('Error durante el registro:', error);
-                res.status(500).json({ msg: 'Ocurrió un error durante el registro' });
-            }
+    try {
+        // Validación de campos vacíos
+        if (Object.values(req.body).some(value => value === "")) {
+            return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+        }
+        // Capturar los datos del body de la petición
+        const { Email_admin, Password_admin } = req.body;
+        // Validación de existencia del mail
+        const verificarEmailBDD = await Admin.findOne({ Email_admin });
+        if (verificarEmailBDD) {
+            return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+        }
+        // Crear la instancia del modelo
+        const nuevoAdmin = new Admin(req.body);
+        // Encriptar el password del Administrador
+        nuevoAdmin.Password_admin = await nuevoAdmin.encrypPassword(Password_admin);
+        // Crear el token del Administrador
+        nuevoAdmin.crearToken();
+        // Crear el token del Administrador
+        const token = nuevoAdmin.crearToken();
+        // Invocar la función para el envío del correo
+        await sendMailToAdmin(Email_admin, token);
+        // Guardar en la base de datos
+        await nuevoAdmin.save();
+        // Enviar la respuesta
+        res.status(200).json({ msg: "Revisa tu correo electrónico para confirmar tu cuenta" });
+    } catch (error) {
+        console.error('Error durante el registro:', error);
+        res.status(500).json({ msg: 'Ocurrió un error durante el registro' });
+    }
 };
 
 const confirmEmailAdmin = async (req, res) => {
@@ -172,6 +178,85 @@ const logoutAdmin = async (req, res) => {
     });
 }
 
+const eliminacionCascada = async (req, res) => {
+    try {
+        // Verificar si el token corresponde a un usuario administrador en la base de datos
+        const { authorization } = req.headers;
+        const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+
+        // Verificar si el token corresponde a un tutor en la base de datos
+        const adminToken = await Admin.findOne({ _id: id });
+        if (!adminToken) {
+            // Si no se encuentra un tutor con el ID proporcionados
+            return res.status(401).json({ msg: 'No autorizado. Solo un usuario Administrador' });
+        }
+
+        // Se obtiene el ID del tutor
+        const { tutorId } = req.params;
+
+        // Validar ID en DBB Tutor
+        if (!mongoose.Types.ObjectId.isValid(tutorId)) {
+            return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
+        }
+
+        // Obtener información del tutor en base al ID
+        const tutor = await Tutor.findById(tutorId);
+
+        // Validar si existe la actividad
+        if (!tutor) {
+            return res.status(404).json({ msg: `El tutor no fue encontrado` });
+        }
+
+        // Obtener los IDs de los niños antes de eliminarlos
+        const ninosParaEliminar = await Nino.find({ tutor: tutorId });
+        console.log('Ninos para eliminar:', ninosParaEliminar);
+        const ninosIds = ninosParaEliminar.map((nino) => nino._id);
+        console.log('Ninos IDS:', ninosIds);
+
+        // Eliminar niños asociados al tutor
+        const ninosEliminados = await Nino.deleteMany({ tutor: tutorId });
+        console.log('Ninos eliminados:', ninosEliminados);
+
+        // Validar si se encontraron niños asociados al tutor
+        if (ninosEliminados.deletedCount === 0) {
+            return res.status(200).json({ msg: `Eliminación exitosa. No se encontraron niños asociados al tutor` });
+        }
+
+        // Eliminar registros en "inscripcion"
+        const inscripcionEliminada = await Inscripcion.deleteMany({ nino: { $in: ninosIds } });
+
+        // Eliminar registros en "logros"
+        const logrosEliminados = await Logros.deleteMany({ Nino: { $in: ninosIds } });
+
+        // Eliminar registros en "progreso"
+        const progresoEliminado = await Progreso.deleteMany({ NinoId: { $in: ninosIds } });
+
+        // Ahora, eliminar el tutor solo si hay niños asociados
+        await Tutor.findByIdAndDelete(tutorId);
+
+        // Validar si se encontraron registros en "inscripcion"
+        if (inscripcionEliminada.deletedCount === 0) {
+            console.log(`No se encontraron registros en inscripción asociados a los niños`);
+        }
+
+        // Validar si se encontraron registros en "logros"
+        if (logrosEliminados.deletedCount === 0) {
+            console.log(`No se encontraron registros en logros asociados a los niños`);
+        }
+
+        // Validar si se encontraron registros en "progreso"
+        if (progresoEliminado.deletedCount === 0) {
+            console.log(`No se encontraron registros en progreso asociados a los niños`);
+        }
+
+        res.status(200).json({ msg: `Eliminación en cascada exitosa.` });
+    } catch (error) {
+        console.error("Error en la eliminación del niño:", error);
+        res.status(500).json({ msg: "Error interno del servidor" });
+    }
+};
+
+
 export {
     registrarAdmin,
     confirmEmailAdmin,
@@ -179,5 +264,6 @@ export {
     recuperarPasswordAdmin,
     comprobarTokenPaswordAdmin,
     nuevoPasswordAdmin,
-    logoutAdmin
+    logoutAdmin,
+    eliminacionCascada
 }

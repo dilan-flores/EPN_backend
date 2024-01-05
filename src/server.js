@@ -7,6 +7,7 @@ import routerNino from './routers/nino_routes.js'
 import routerAdmin from './routers/admin_routes.js'
 import routerInscripcion from './routers/inscripcion_routes.js'
 import routerActividad from './routers/actividad_routes.js'
+import routerProgreso from './routers/progreso_routes.js'
 
 // Cierre de sesión
 import session from 'express-session';
@@ -59,6 +60,7 @@ app.use('/api', routerNino)
 app.use('/api', routerAdmin)
 app.use('/api', routerActividad)
 app.use('/api', routerInscripcion)
+app.use('/api', routerProgreso)
 // Manejo de una ruta que no sea encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
 // Archivos estáticos
