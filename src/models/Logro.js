@@ -9,6 +9,10 @@ const LogroSchema = new Schema({
     Nino:{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Nino'
+    },
+    ImagenURL: {
+        type: String,
+        required: true,
     }
 },{
     timestamps:true
