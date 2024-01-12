@@ -9,6 +9,9 @@ import routerInscripcion from './routers/inscripcion_routes.js'
 import routerActividad from './routers/actividad_routes.js'
 import routerProgreso from './routers/progreso_routes.js'
 import routerLogro from './routers/logro_routes.js'
+//Documentación
+import swaggerUI from 'swagger-ui-express'
+import openApiConfiguration from './docs/swagger.js';
 
 // Cierre de sesión
 import session from 'express-session';
@@ -63,6 +66,9 @@ app.use('/api', routerActividad)
 app.use('/api', routerInscripcion)
 app.use('/api', routerProgreso)
 app.use('/api', routerLogro)
+//Ruta de la documentación
+app.use('/doc', swaggerUI.serve, swaggerUI.setup(openApiConfiguration))
+
 // Manejo de una ruta que no sea encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))
 // Archivos estáticos

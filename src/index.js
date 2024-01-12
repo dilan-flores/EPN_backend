@@ -8,3 +8,5 @@ connection()
 app.listen(app.get('port'),()=>{
     console.log(`Server en http://localhost:${app.get('port')}`);
 })
+
+export default app;
