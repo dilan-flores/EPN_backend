@@ -38,7 +38,7 @@ import {
  *           description: Email del administrador
  *         Password_admin:
  *           type: String
- *           description: Contraseña cel usuario Niño
+ *           description: Contraseña del administrador
  *       example:
  *         Email_admin: dilan.flores@epn.edu.ec
  *         Password_admin: DAFQ1234
@@ -55,12 +55,14 @@ import {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/AdminDatosLoginNino'
+ *             $ref: '#/components/schemas/AdminDatosLogin'
  *     responses:
  *       200:
  *         description: Usuario Niño logiado exitosamente
  *       400:
  *         description: Campos vacíos
+ *       403:
+ *         description: No se verificó la cuenta
  *       404:
  *         description: Usuario no registrado
  */
@@ -80,6 +82,7 @@ router.get("/admin/confirmar/:token", confirmEmailAdmin);
  *       properties:
  *         Email_admin:
  *           type: string
+ *           format: email
  *           description: Email del usuario Administrador para restablecer la contraseña
  *       example:
  *         "Email_admin": "dilan.flores@epn.edu.ec" 
@@ -100,11 +103,9 @@ router.get("/admin/confirmar/:token", confirmEmailAdmin);
  *       200:
  *         description: Se envió un email al administrador para restablecer contraseña
  *       400:
- *         description: Problema al obtener el email del Administrador
- *       401:
- *         description: Usuario no autorizado
- *       500:
- *         description: Error del servidor  
+ *         description: Campos vacíos
+ *       404:
+ *         description: Administrador no encontrado
  *         
  */
 router.post("/admin/recuperar-password", recuperarPasswordAdmin);
@@ -182,11 +183,11 @@ router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
  *           example: 659f56ea027b10d5fb47b581
  *     responses:
  *       200:
- *         description: Contraseña cambiada exitosamente
+ *         description: Eliminación exitosa
  *       401:
  *         description: Usuario no autorizado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Id no válido; Usuario no encontrado
  *       500:
  *         description: Error en el servidor
  */
@@ -205,6 +206,9 @@ router.delete('/eliminacionCascada/:tutorId', verificarAutenticacion,eliminacion
  *         description: Sesión cerrada exitosamente
  *       401:
  *         description: No autorizado, token inválido o caducado
+ *       500:
+ *         description: Error en el servidor
  */
 router.post('/admin/logout', verificarAutenticacion,logoutAdmin);
+
 export default router

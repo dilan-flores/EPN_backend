@@ -43,16 +43,13 @@ import {
  *         - Email_tutor
  *         - Password_tutor
  *       properties:
- *         _id:
- *           type: string
- *           description: ID generado automáticamente por MongoDB
  *         Email_tutor:
  *           type: string
  *           format: email
- *           description: Nombre completo del usuario
+ *           description: Email del usuario Tutor
  *         Password_tutor:
  *           type: String
- *           description: Número de teléfono del usuario
+ *           description: Contraseña de usuario Tutor
  *       example:
  *         Email_tutor: dilan.flores@epn.edu.ec
  *         Password_tutor: DAFQ1234
@@ -74,7 +71,11 @@ import {
  *       200:
  *         description: Usuario Tutor logiado exitosamente
  *       400:
- *         description: Problema en el envío de datos
+ *         description: Campos vacíos
+ *       403:
+ *         description: No se verificó la cuenta
+ *       404:
+ *         description: Usuario no registrado
  */
 router.post('/login', login)
 
@@ -130,7 +131,13 @@ router.post('/login', login)
  *       200:
  *         description: Usuario Tutor registrado exitosamente
  *       400:
- *         description: Problema en el envío de datos o correo electrónico ya registrado
+ *         description: Campos vacíos
+ *       409:
+ *         description: Usuario ya registrado
+ *       422:
+ *         description: Validaciones fallidas; sintaxis incorrecta
+ *       500: 
+ *         description: Error del servidor
  */
 router.post('/registro', registrar);
 router.get("/confirmar/:token", confirmEmail);
@@ -155,7 +162,7 @@ router.get("/confirmar/:token", confirmEmail);
  * @swagger
  * /api/recuperar-password:
  *   post:
- *     summary: Restablecer contraseña de usuario Tutor (Endpoint no disponible)
+ *     summary: Restablecer contraseña de usuario Tutor
  *     tags: [Tutor]
  *     requestBody:
  *       required: true
@@ -167,7 +174,9 @@ router.get("/confirmar/:token", confirmEmail);
  *       200:
  *         description: Se envió un email para verificar el restablecer contraseña
  *       400:
- *         description: Problema en el envío de datos o correo electrónico no registrado
+ *         description: Campos vacíos
+ *       404:
+ *         description: Tutor no encontrado
  */
 router.post("/recuperar-password", recuperarPassword);
 router.get("/recuperar-password/:token", comprobarTokenPasword);
@@ -216,7 +225,15 @@ router.get("/recuperar-password/:token", comprobarTokenPasword);
  *       200:
  *         description: Contraseña cambiada exitosamente
  *       400:
- *         description: Problema en el envío de datos o token no válido
+ *         description: Problemas en la validación de cuenta; Campos vacíos
+ *       401:
+ *         description: Usuario no autorizado
+ *       404:
+ *         description: Password no coinciden
+ *       422:
+ *         description: Validaciones fallidas, sintaxis incorrecta
+ *       500:
+ *         description: Error del servidor
  */
 router.post("/nuevo-password/:token", nuevoPassword);
 /**
@@ -238,10 +255,14 @@ router.post("/nuevo-password/:token", nuevoPassword);
  *     responses:
  *       200:
  *         description: Perfil del tutor obtenido exitosamente
+ *       400:
+ *         description: La solicitud no fue procesada
  *       401:
  *         description: No autorizado, token inválido o caducado
  *       404:
  *         description: Tutor no encontrado
+ *       500:
+ *         description: Error del servidor
  */
 router.get('/tutor/:id', verificarAutenticacion, perfilTutor);
 /**
@@ -256,7 +277,9 @@ router.get('/tutor/:id', verificarAutenticacion, perfilTutor);
  *       200:
  *         description: Sesión cerrada exitosamente
  *       401:
- *         description: No autorizado, token inválido o caducado
+ *         description: Usuario no autorizado
+ *       500:
+ *         description: Error en el servidor
  */
 router.post('/logout', verificarAutenticacion, logoutTutor);
 

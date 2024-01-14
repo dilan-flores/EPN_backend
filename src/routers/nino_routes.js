@@ -42,8 +42,8 @@ import{
  *           type: String
  *           description: Contraseña del usuario Niño
  *       example:
- *         Usuario_nino: dilan.flores@epn.edu.ec
- *         Password_nino: DAFQ1234
+ *         Usuario_nino: AlexY
+ *         Password_nino: AAYF1234
  */
 
 /**
@@ -57,12 +57,16 @@ import{
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/DatosLoginNino'
+ *             $ref: '#/components/schemas/NinoDatosLogin'
  *     responses:
  *       200:
  *         description: Usuario Niño logiado exitosamente
  *       400:
  *         description: Problema en el envío de datos
+ *       403:
+ *         description: No se verificó la cuenta 
+ *       404:
+ *         description: Usuario no registrado
  */
 router.post('/nin@s/login',loginNino);
 
@@ -92,10 +96,10 @@ router.post('/nin@s/login',loginNino);
  *           type: string
  *           description: Contraseña del Niño
  *       example:
- *         Nombre_nino: "AlexYyy"
+ *         Nombre_nino: "AlexY"
  *         FN_nino: "2012-12-05"
- *         Usuario_nino: "alexyyy"
- *         Password_nino: "AAYF1727"
+ *         Usuario_nino: "AlexY"
+ *         Password_nino: "AAYF1234"
  */
 /**
  * @swagger
@@ -115,9 +119,13 @@ router.post('/nin@s/login',loginNino);
  *       200:
  *         description: Usuario Niño registrado exitosamente
  *       400:
- *         description: Campos vacíos
+ *         description: Problemas en el endpoint
  *       401:
  *         description: No autorizado
+ *       422:
+ *         description: Validaciones fallidas; sintaxis incorrecta
+ *       500:
+ *         description: Error de servidor
  */
 router.post('/nin@s/registro',verificarAutenticacion,registrarNino);
 router.get("/nin@s/confirmar/:token", confirmCuenta);
@@ -135,12 +143,14 @@ router.get("/nin@s/confirmar/:token", confirmCuenta);
  *         description: Visualización de todo Niño registrado
  *       401:
  *         description: Usuario no autorizado
+ *       500:
+ *         description: Error del servidor
  */
 router.get('/nin@s',verificarAutenticacion,renderAllNino);
 
 /**
  * @swagger
- * /api/nin@s/:id:
+ * /api/nin@s/{id}:
  *   get:
  *     summary: Visualizar un usuario Niño
  *     tags: [Nino]
@@ -150,7 +160,7 @@ router.get('/nin@s',verificarAutenticacion,renderAllNino);
  *       - in: path
  *         name: id
  *         required: true
- *         description: Id del Tutor o Niño
+ *         description: Id del Niño
  *         schema:
  *           type: string
  *           example: 659f56ea027b10d5fb47b581
@@ -158,9 +168,11 @@ router.get('/nin@s',verificarAutenticacion,renderAllNino);
  *       200:
  *         description: Visualización de un Niño
  *       401:
- *         description: Usuario no autorizado
+ *         description: No autorizado, token inválido o caducado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Niño no encontrado
+ *       500:
+ *         description: Error del servidor
  */
 router.get('/nin@s/:id',verificarAutenticacion,perfilNino);
 
@@ -219,7 +231,7 @@ router.get('/nin@s/:id',verificarAutenticacion,perfilNino);
  *       401:
  *         description: Usuario no autorizado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Niño no encontrado; Id no válido o no encontrado
  *       422:
  *         description: Validaciones fallidas, sintaxis incorrecta
  *       500:
@@ -249,7 +261,7 @@ router.put('/nin@s/actualizar/:id',verificarAutenticacion,actualizarNino);
  *       401:
  *         description: Usuario no autorizado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Id no válido; Usuario no encontrado
  *       500:
  *         description: Error del servidor
  */
@@ -268,13 +280,13 @@ router.delete('/nin@s/eliminar/:id',verificarAutenticacion,eliminarNino);
  *           type: string
  *           description: Usuario del niño para restablecer la contraseña (Se envía el email del tutor)
  *       example:
- *         "Usuario_nino": "alexyyy" 
+ *         "Usuario_nino": "AlexY" 
  */
 /**
  * @swagger
  * /api/nin@/recuperar-password:
  *   post:
- *     summary: Restablecer contraseña de usuario Tutor (Endpoint no disponible)
+ *     summary: Restablecer contraseña de usuario Tutor
  *     tags: [Nino]
  *     security:
  *       - bearerAuth: []
@@ -288,12 +300,9 @@ router.delete('/nin@s/eliminar/:id',verificarAutenticacion,eliminarNino);
  *       200:
  *         description: Se envió un email al tutor para verificar el restablecer contraseña del Niño
  *       400:
- *         description: Problema al obtener el email del tutor
- *       401:
- *         description: Usuario no autorizado
- *       500:
- *         description: Error del servidor  
- *         
+ *         description: Campos vacíos
+ *       404:
+ *         description: Niño no encontrado
  */
 router.post("/nin@/recuperar-password", verificarAutenticacion, recuperarPasswordNino);
 router.get("/nin@s/recuperar-password/:token", comprobarTokenPaswordNino);
@@ -343,8 +352,8 @@ router.get("/nin@s/recuperar-password/:token", comprobarTokenPaswordNino);
  *         description: Contraseña cambiada exitosamente
  *       400:
  *         description: Problema en el envío de datos o token no válido
- *       401:
- *         description: Usuario no autorizado
+ *       404:
+ *         description: Password no coinciden
  *       422:
  *         description: Validaciones fallidas, sintaxis incorrecta
  *       500:
@@ -365,6 +374,8 @@ router.post("/nin@s/nuevo-password/:token", nuevoPasswordNino);
  *         description: Sesión cerrada exitosamente
  *       401:
  *         description: No autorizado, token inválido o caducado
+ *       500:
+ *         description: Error en el servidor
  */
 router.post('/nin@s/logout', verificarAutenticacion,logoutNino);
 

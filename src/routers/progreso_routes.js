@@ -63,10 +63,14 @@ import {
  *     responses:
  *       200:
  *         description: Progreso registrado exitosamente
+ *       400:
+ *         description: Campos vacíos
  *       401:
  *         description: No autorizado
  *       404:
- *         description: Actividad no encontrada
+ *         description: Id no es válido
+ *       422:
+ *         description: Validaciones fallidas; sintaxis incorrecta
  *       500:
  *         description: Error del servidor
  */
@@ -75,7 +79,7 @@ router.post('/progreso/registro/:ActividadId', verificarAutenticacion, ProgresoR
 
 /**
  * @swagger
- * /progreso/{actividadID}:
+ * /api/progreso/{actividadID}:
  *   get:
  *     summary: Obtener progreso de una actividad para un niño
  *     tags: [Progreso]

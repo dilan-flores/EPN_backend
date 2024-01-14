@@ -30,7 +30,7 @@ import {
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Visualización de todo Niño registrado
+ *         description: Visualización de actividades registradas
  *       401:
  *         description: Usuario no autorizado
  *       500:
@@ -92,11 +92,11 @@ router.get('/actividades',verificarAutenticacion,renderAllActividades);
  *       200:
  *         description: Actividad registrada exitosamente
  *       400:
- *         description: Campos vacíos
+ *         description: Problemas en el endpoint
  *       401:
  *         description: No autorizado
  *       422:
- *         description: Validaciones fallidas, sintaxis incorrecta
+ *         description: Validaciones fallidas; sintaxis incorrecta
  *       500:
  *         description: Error del servidor
  */
@@ -104,7 +104,7 @@ router.post('/actividad/registro',verificarAutenticacion,registrarActividad);
 
 /**
  * @swagger
- * /api/actividad/:id:
+ * /api/actividad/{id}:
  *   get:
  *     summary: Visualizar actividad
  *     tags: [Actividades]
@@ -122,7 +122,9 @@ router.post('/actividad/registro',verificarAutenticacion,registrarActividad);
  *       200:
  *         description: Visualización de actividad
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Id no válido; Usuario no encontrado
+ *       500:
+ *         description: Error de servidor
  */
 router.get('/actividad/:id',verificarAutenticacion,visualizarActividad);
 
@@ -151,9 +153,9 @@ router.get('/actividad/:id',verificarAutenticacion,visualizarActividad);
  *           type: string
  *           description: Nuevo video de actividad
  *       example:
- *         Nombre_act: "Alex :)"
- *         Detalle_act: "2013-08-02"
- *         Nivel_dificultad: "AlexAlex"
+ *         Nombre_act: "Rompecabezas"
+ *         Detalle_act: "Rompecabezas de números"
+ *         Nivel_dificultad: "Media"
  *         Recurso_video: "https://www.youtube.com/watch?v=H14uumkORzQ"
  */
 /**
@@ -186,7 +188,7 @@ router.get('/actividad/:id',verificarAutenticacion,visualizarActividad);
  *       401:
  *         description: Usuario no autorizado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Id no válido; Usuario no encontrado
  *       422:
  *         description: Validaciones fallidas, sintaxis incorrecta
  *       500:
@@ -216,7 +218,7 @@ router.put('/actividad/actualizar/:id',verificarAutenticacion,actualizarActivida
  *       401:
  *         description: Usuario no autorizado
  *       404:
- *         description: Id no válido o no encontrado
+ *         description: Id no válido; Usuario no encontrado
  *       500:
  *         description: Error del servidor
  */

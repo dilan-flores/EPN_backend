@@ -115,13 +115,13 @@ const VisualizarProgreso = async (req, res) => {
             if (!mongoose.Types.ObjectId.isValid(actividadID)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
 
             // Obtener información del niño en base al ID
-            const actividad = await Actividad.findById(actividadID).select('-createdAt -updatedAt -__v -id');
+            const actividad = await Actividad.findById(actividadID).select('-createdAt -updatedAt -__v');
             // Validar si existe la actividad
             if (!actividad) {
                 return res.status(404).json({ msg: `La actividad no fue encontrada` });
             }
             // Obtener información del niño en base al ID
-            const progreso = await Progreso.findOne({ ActividadId: actividadID, NinoId: ninoToken }).select('-createdAt -updatedAt -__v -id');
+            const progreso = await Progreso.findOne({ ActividadId: actividadID, NinoId: ninoToken }).select('-createdAt -updatedAt -__v');
             // Validar si existe el niño
             if (!progreso) {
                 return res.status(404).json({ msg: `No existe progreso registrado en BDD` });

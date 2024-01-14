@@ -14,14 +14,12 @@ const CrearInsignia = async (req, res) => {
         if (!ninoToken) {
             return res.status(401).json({ error: 'No autorizado. Solo usuario Nino' });
         }
-
         // Obtener el número de actividades completadas por el niño
         const actividadesCompletadas = await Progreso.find({
             NinoId: ninoToken,
             // 3 representa haber completado exitosamente una actividad
             Completado: 3, // Ajusta según la lógica de tu aplicación
         });
-
         // Calcular la puntuación total en las actividades completadas
         const puntuacionActividades = actividadesCompletadas.reduce((total, actividad) => {
             return total + actividad.Puntuacion;
@@ -64,7 +62,7 @@ const CrearInsignia = async (req, res) => {
                 console.log("Insignia desbloqueada");
                 return res.status(200).json({ success: true, msg: 'Insignia desbloqueada y registrada' });
             } else {
-                return res.status(200).json({ success: true, msg: 'Insignia ya registrada' });
+                return res.status(400).json({ success: true, msg: 'Insignia ya registrada' });
             }
 
         } else {
@@ -74,7 +72,6 @@ const CrearInsignia = async (req, res) => {
         //}
         //console.log("Sin insignias")
         //return res.status(200).json({ success: true, msg: 'Sin insignia' });
-
     } catch (error) {
         console.error('Error al desbloquear logros:', error);
         res.status(500).json({ error: 'Error del servidor' });

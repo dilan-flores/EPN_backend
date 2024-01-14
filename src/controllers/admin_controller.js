@@ -73,7 +73,7 @@ const loginAdmin = async (req, res) => {
     // Capturar los datos del requests
     const { Email_admin, Password_admin } = req.body
     // Validación de campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
     // Obtener el Admin en base al email
     const AdminBDD = await Admin.findOne({ Email_admin }).select("-status -__v -token -updatedAt -createdAt")
     // Validar si existe el Administrador
@@ -99,7 +99,7 @@ const recuperarPasswordAdmin = async (req, res) => {
     // Se obtiene el email del Administrador
     const { Email_admin } = req.body
     // Validación de campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
     // Obtener el Administrador en base al email
     const adminBDD = await Admin.findOne({ Email_admin })
     // Validación de existencia de Administrador
@@ -118,7 +118,7 @@ const recuperarPasswordAdmin = async (req, res) => {
 
 const comprobarTokenPaswordAdmin = async (req, res) => {
     // Validar el token
-    if (!(req.params.token)) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    if (!(req.params.token)) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
     // Obtener el Administrador en base al token
     const adminBDD = await Admin.findOne({ token: req.params.token })
     // Validación si existe el Administrador
@@ -133,7 +133,7 @@ const nuevoPasswordAdmin = async (req, res) => {
     try {
         // Validación de campos vacíos
         if (Object.values(req.body).some(value => value === "")) {
-            return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+            return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
         }
         // Validar coincidencia de los passwords
         const { password, confirmpassword } = req.body;
@@ -146,7 +146,7 @@ const nuevoPasswordAdmin = async (req, res) => {
         const errors = validationResult(req);
         // Verificar si hay errores
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(422).json({ errors: errors.array() });
         }
         // Obtener los datos del Administrador en base al token
         const adminBDD = await Admin.findOne({ token: req.params.token });
@@ -154,7 +154,7 @@ const nuevoPasswordAdmin = async (req, res) => {
         if (!adminBDD || adminBDD.token === null) {
             // console.log("Valor de tutorBDD.token:", tutorBDD.token);
             // console.log("Valor de req.params.token:", req.params.token);
-            return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+            return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
         }
         // Setear el token nuevamente a null
         adminBDD.token = null;
@@ -170,85 +170,58 @@ const nuevoPasswordAdmin = async (req, res) => {
     }
 };
 
-const logoutAdmin = async (req, res) => {
-    req.logout((err) => {
-        if (err) return res.status(500).json({ msg: "Ocurrió un error al cerrar sesión" });
-
-        return res.status(200).json({ msg: "Sesión cerrada exitosamente" });
-    });
-}
-
 const eliminacionCascada = async (req, res) => {
     try {
         // Verificar si el token corresponde a un usuario administrador en la base de datos
         const { authorization } = req.headers;
         const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
-
         // Verificar si el token corresponde a un tutor en la base de datos
         const adminToken = await Admin.findOne({ _id: id });
         if (!adminToken) {
             // Si no se encuentra un tutor con el ID proporcionados
             return res.status(401).json({ msg: 'No autorizado. Solo un usuario Administrador' });
         }
-
         // Se obtiene el ID del tutor
         const { tutorId } = req.params;
-
         // Validar ID en DBB Tutor
         if (!mongoose.Types.ObjectId.isValid(tutorId)) {
             return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
         }
-
         // Obtener información del tutor en base al ID
         const tutor = await Tutor.findById(tutorId);
-
-        // Validar si existe la actividad
+        // Validar si existe el tutor
         if (!tutor) {
             return res.status(404).json({ msg: `El tutor no fue encontrado` });
         }
-
         // Obtener los IDs de los niños antes de eliminarlos
         const ninosParaEliminar = await Nino.find({ tutor: tutorId });
-        console.log('Ninos para eliminar:', ninosParaEliminar);
         const ninosIds = ninosParaEliminar.map((nino) => nino._id);
-        console.log('Ninos IDS:', ninosIds);
-
         // Eliminar niños asociados al tutor
         const ninosEliminados = await Nino.deleteMany({ tutor: tutorId });
-        console.log('Ninos eliminados:', ninosEliminados);
-
         // Validar si se encontraron niños asociados al tutor
         if (ninosEliminados.deletedCount === 0) {
             return res.status(200).json({ msg: `Eliminación exitosa. No se encontraron niños asociados al tutor` });
         }
-
         // Eliminar registros en "inscripcion"
         const inscripcionEliminada = await Inscripcion.deleteMany({ nino: { $in: ninosIds } });
-
         // Eliminar registros en "logros"
         const logrosEliminados = await Logros.deleteMany({ Nino: { $in: ninosIds } });
-
         // Eliminar registros en "progreso"
         const progresoEliminado = await Progreso.deleteMany({ NinoId: { $in: ninosIds } });
-
         // Ahora, eliminar el tutor solo si hay niños asociados
         await Tutor.findByIdAndDelete(tutorId);
-
         // Validar si se encontraron registros en "inscripcion"
         if (inscripcionEliminada.deletedCount === 0) {
             console.log(`No se encontraron registros en inscripción asociados a los niños`);
         }
-
         // Validar si se encontraron registros en "logros"
         if (logrosEliminados.deletedCount === 0) {
             console.log(`No se encontraron registros en logros asociados a los niños`);
         }
-
         // Validar si se encontraron registros en "progreso"
         if (progresoEliminado.deletedCount === 0) {
             console.log(`No se encontraron registros en progreso asociados a los niños`);
         }
-
         res.status(200).json({ msg: `Eliminación en cascada exitosa.` });
     } catch (error) {
         console.error("Error en la eliminación del niño:", error);
@@ -256,6 +229,12 @@ const eliminacionCascada = async (req, res) => {
     }
 };
 
+const logoutAdmin = async (req, res) => {
+    req.logout((err) => {
+        if (err) return res.status(500).json({ msg: "Ocurrió un error al cerrar sesión" });
+        return res.status(200).json({ msg: "Sesión cerrada exitosamente" });
+    });
+}
 
 export {
     registrarAdmin,

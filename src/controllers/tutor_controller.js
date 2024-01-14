@@ -36,26 +36,26 @@ const login = async (req, res) => {
     // Capturar los datos del requests
     const { Email_tutor, Password_tutor } = req.body
     // Vallidación de campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
     // Obtener el tutor en base al email
     const TutorBDD = await Tutor.findOne({ Email_tutor }).select("-status -__v -token -updatedAt -createdAt")
-    // Validar si iexiste el tutor
+    // Validar si existe el tutor
     if (TutorBDD?.confirmEmail === false) return res.status(403).json({ msg: "Lo sentimos, debe verificar su cuenta" })
     // Verificar si existe el tutor
     if (!TutorBDD) return res.status(404).json({ msg: "Lo sentimos, el tutor no se encuentra registrado" })
     // Validar si el password del request es el mismo de la BDD
     const verificarPassword = await TutorBDD.matchPassword(Password_tutor)
-    if (!verificarPassword) return res.status(404).json({ msg: "Lo sentimos, el password no es el correcto" })
+    if (!verificarPassword) return res.status(401).json({ msg: "Lo sentimos, el password no es el correcto" })
     const token = generarJWT(TutorBDD._id)
     // Desestructurar la información del tutor; Mandar solo algunos campos 
     const { Nombre_tutor, Rol_tutor, Celular_tutor, _id } = TutorBDD
     // Presentación de datos
     res.status(200).json({
         token,
+        _id,
         Nombre_tutor,
         Rol_tutor,
         Celular_tutor,
-        _id,
         Email_tutor: TutorBDD.Email_tutor // segunda opción
     })
 }
@@ -79,7 +79,7 @@ const registrar = async (req, res) => {
         // Validación de existencia del mail
         const verificarEmailBDD = await Tutor.findOne({ Email_tutor });
         if (verificarEmailBDD) {
-            return res.status(400).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
+            return res.status(409).json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
         }
         // Crear la instancia del modelo
         const nuevoTutor = new Tutor(req.body);
@@ -120,40 +120,34 @@ const confirmEmail = async (req, res) => {
 }
 
 const perfilTutor = async (req, res) => {
-    if (req.headers.authorization) {
-        try {
-            const { authorization } = req.headers;
-            const { id: tutorId } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
-
-            // Verificar si el token corresponde a un tutor en la base de datos
-            const tutorToken = await Tutor.findOne({ _id: tutorId });
-            if (!tutorToken) {
-                // Si no se encuentra un tutor con el ID proporcionados
-                return res.status(401).json({ msg: 'No autorizado. Solo un usuario Tutor' });
-            }
-
-            // Se obtiene el ID del tutor que ingresó al sistema
-            const { id } = req.params
-
-            // Verificar si el id del tutor que ingresó al sistema es igual al id optenido en el endpoint
-            if (id === tutorId) {
-                // Validar ID en DBB tutor
-                if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).json({ msg: `Lo sentimos, debe ser un id válido` });
-                // Obtener información tutor en base al ID
-                const tutorBDD = await Tutor.findById(id).select("-Password_tutor -confirmEmail -token -status -updatedAt -__v ")
-                // Validar si existe el tutor
-                if (!tutorBDD) return res.status(404).json({ msg: `Lo sentimos, no existe el tutor con id: ${id}` })
-                // Mostrar los datos del tutor
-                res.status(200).json({ msg: tutorBDD })
-            }else{
-                res.status(401).json({ msg: 'Tutor no autorizado' });
-            }
-        } catch (error) {
-            console.error('Error durante el registro:', error);
-            res.status(500).json({ msg: 'Error del servidor' });
+    try {
+        // Verificar si el token corresponde a un Tutor en la base de datos
+        const { authorization } = req.headers;
+        const { id: tutorId } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+        // Verificar si el token corresponde a un tutor en la base de datos
+        const tutorToken = await Tutor.findOne({ _id: tutorId });
+        if (!tutorToken) {
+            // Si no se encuentra un tutor con el ID proporcionados
+            return res.status(401).json({ msg: 'No autorizado. Solo un usuario Tutor' });
         }
-    } else {
-        res.status(401).json({ msg: 'No autorizado' });
+        // Se obtiene el ID del tutor que ingresó al sistema
+        const { id } = req.params
+        // Verificar si el id del tutor que ingresó al sistema es igual al id optenido en el endpoint
+        if (id === tutorId) {
+            // Validar ID en DBB tutor
+            if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ msg: `Lo sentimos, debe ser un id válido` });
+            // Obtener información tutor en base al ID
+            const tutorBDD = await Tutor.findById(id).select("-Password_tutor -confirmEmail -token -status -updatedAt -__v -_id")
+            // Validar si existe el tutor
+            if (!tutorBDD) return res.status(404).json({ msg: `Lo sentimos, no existe el tutor con id: ${id}` })
+            // Mostrar los datos del tutor
+            res.status(200).json({ msg: tutorBDD })
+        } else {
+            res.status(401).json({ msg: 'Tutor no autorizado' });
+        }
+    } catch (error) {
+        console.error('Error durante el registro:', error);
+        res.status(500).json({ msg: 'Error del servidor' });
     }
 }
 
@@ -180,7 +174,7 @@ const recuperarPassword = async (req, res) => {
     // Se obtiene el email del tutor
     const { Email_tutor } = req.body
     // Validación de campos vacíos
-    if (Object.values(req.body).includes("")) return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" })
+    if (Object.values(req.body).includes("")) return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" })
     // Obtener el tutor en base al email
     const tutorBDD = await Tutor.findOne({ Email_tutor })
     // Validación de existencia de tutor
@@ -199,11 +193,11 @@ const recuperarPassword = async (req, res) => {
 
 const comprobarTokenPasword = async (req, res) => {
     // Validar el token
-    if (!(req.params.token)) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    if (!(req.params.token)) return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
     // Obtener el tutor en base al token
     const tutorBDD = await Tutor.findOne({ token: req.params.token })
     // Validación si existe el tutor
-    if (tutorBDD?.token !== req.params.token) return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
+    if (tutorBDD?.token !== req.params.token) return res.status(401).json({ msg: "Lo sentimos, no se puede validar la cuenta" })
     // Guardar en BDD
     await tutorBDD.save()
     // Presentar mensaje al tutor
@@ -214,7 +208,7 @@ const nuevoPassword = async (req, res) => {
     try {
         // Validación de campos vacíos
         if (Object.values(req.body).some(value => value === "")) {
-            return res.status(404).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+            return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
         }
         // Validar coincidencia de los passwords
         const { password, confirmpassword } = req.body;
@@ -227,13 +221,13 @@ const nuevoPassword = async (req, res) => {
         const errors = validationResult(req);
         // Verificar si hay errores
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(422).json({ errors: errors.array() });
         }
         // Obtener los datos del tutor en base al token
         const tutorBDD = await Tutor.findOne({ token: req.params.token });
         // Validar la existencia de tutor y que el token no sea null o undefined
         if (!tutorBDD || tutorBDD.token === null) {
-            return res.status(404).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
+            return res.status(400).json({ msg: "Lo sentimos, no se puede validar la cuenta" });
         }
         // Setear el token nuevamente a null
         tutorBDD.token = null;
@@ -252,7 +246,6 @@ const nuevoPassword = async (req, res) => {
 const logoutTutor = async (req, res) => {
     req.logout((err) => {
         if (err) return res.status(500).json({ msg: "Ocurrió un error al cerrar sesión" });
-
         return res.status(200).json({ msg: "Sesión cerrada exitosamente" });
     });
 }

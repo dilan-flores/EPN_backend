@@ -28,6 +28,8 @@ import {
  *     responses:
  *       200:
  *         description: Insignia registrada exitosamente
+ *       400:
+ *         description: Logro ya registrado
  *       401:
  *         description: No autorizado
  *       500:
