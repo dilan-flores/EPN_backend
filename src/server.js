@@ -11,7 +11,7 @@ import routerProgreso from './routers/progreso_routes.js'
 import routerLogro from './routers/logro_routes.js'
 //Documentación
 import swaggerUI from 'swagger-ui-express'
-import openApiConfiguration from './docs/swagger.js';
+import swaggerSpec from './docs/swagger.js';
 
 // Cierre de sesión
 import session from 'express-session';
@@ -67,7 +67,7 @@ app.use('/api', routerInscripcion)
 app.use('/api', routerProgreso)
 app.use('/api', routerLogro)
 //Ruta de la documentación
-app.use('/doc', swaggerUI.serve, swaggerUI.setup(openApiConfiguration))
+app.use('/doc', swaggerUI.serve, swaggerUI.setup(swaggerSpec))
 
 // Manejo de una ruta que no sea encontrada
 app.use((req, res) => res.status(404).send("Endpoint no encontrado - 404"))

@@ -1,31 +1,28 @@
 import swaggerJsdoc from 'swagger-jsdoc';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /**
  * Configuración API /Información
  */
-const swaggerDefinition = {
-    openapi: '3.0.0',
-    info: {
-        title: 'Api-Node',
-        version: '1.0.0',
-    }
-    ,
-    servers: [
-        {
-            url: "http://localhost:3000"
-        }
-    ]
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Node MongoDB API',
+            version: '1.0.0',
+        },
+        servers: [
+            {
+                url: "http://localhost:3000"
+            }
+        ],
+    },
+    apis: [path.join(__dirname, '../routers/*.js')],  // Corregir la ruta de los routers
 }
 
-/**
- * Opciones
- */
-
-const optiones = {
-    swaggerDefinition,
-    apis: [
-        "./routes/*.js"
-    ]
-}
-
-const openApiConfiguration = swaggerJsdoc(optiones);
-export default openApiConfiguration
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+export default swaggerSpec;
