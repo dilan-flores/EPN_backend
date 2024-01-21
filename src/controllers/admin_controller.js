@@ -200,6 +200,8 @@ const eliminacionCascada = async (req, res) => {
         const ninosEliminados = await Nino.deleteMany({ tutor: tutorId });
         // Validar si se encontraron niños asociados al tutor
         if (ninosEliminados.deletedCount === 0) {
+            // Eliminar al tutor
+            await Tutor.findByIdAndDelete(tutorId);
             return res.status(200).json({ msg: `Eliminación exitosa. No se encontraron niños asociados al tutor` });
         }
         // Eliminar registros en "inscripcion"

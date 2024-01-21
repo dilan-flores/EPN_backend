@@ -174,10 +174,10 @@ router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: tutorId
+ *         in: path
  *         required: true
- *         description: Id del usuario adminsitrador
+ *         description: Id de usuario Tutor
  *         schema:
  *           type: string
  *           example: 659f56ea027b10d5fb47b581
