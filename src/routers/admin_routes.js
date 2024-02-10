@@ -40,8 +40,8 @@ import {
  *           type: String
  *           description: Contraseña del administrador
  *       example:
- *         Email_admin: dilan.flores@epn.edu.ec
- *         Password_admin: DAFQ1234
+ *         Email_admin: "user.adm.epn@gmail.com"
+ *         Password_admin: "adm123EPN"
  */
 
 /**
@@ -85,7 +85,7 @@ router.get("/admin/confirmar/:token", confirmEmailAdmin);
  *           format: email
  *           description: Email del usuario Administrador para restablecer la contraseña
  *       example:
- *         "Email_admin": "dilan.flores@epn.edu.ec" 
+ *         Email_admin: "user.adm.epn@gmail.com" 
  */
 /**
  * @swagger
@@ -128,8 +128,8 @@ router.get("/admin/recuperar-password/:token", comprobarTokenPaswordAdmin);
  *           type: string
  *           description: Confirmación de la nueva contraseña
  *       example:
- *         password: "DAFQ1234"
- *         confirmpassword: "DAFQ1234"
+ *         password: "adm123EPN2"
+ *         confirmpassword: "adm123EPN2"
  */
 /**
  * @swagger

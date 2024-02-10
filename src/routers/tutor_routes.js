@@ -51,8 +51,8 @@ import {
  *           type: String
  *           description: Contraseña de usuario Tutor
  *       example:
- *         Email_tutor: dilan.flores@epn.edu.ec
- *         Password_tutor: DAFQ1234
+ *         Email_tutor: "user.tutor.epn@gmail.com"
+ *         Password_tutor: "tutor123EPN"
  */
 
 /**
@@ -111,9 +111,9 @@ router.post('/login', login)
  *       example:
  *         Nombre_tutor: "Alexander Quimbia"
  *         Rol_tutor: "Familiar"
- *         Celular_tutor: "0985436487"
- *         Email_tutor: "dilan.flores@epn.edu.ec"
- *         Password_tutor: "DAFQ1234"
+ *         Celular_tutor: "0985436485"
+ *         Email_tutor: "user.tutor.epn@gmail.com"
+ *         Password_tutor: "tutor123EPN"
  */
 /**
  * @swagger
@@ -156,7 +156,7 @@ router.get("/confirmar/:token", confirmEmail);
  *           format: email
  *           description: Correo electrónico del tutor para recuperar la contraseña
  *       example:
- *         Email_tutor: "dilan.flores@epn.edu.ec"
+ *         Email_tutor: "user.tutor.epn@gmail.com"
  */
 /**
  * @swagger
@@ -198,8 +198,8 @@ router.get("/recuperar-password/:token", comprobarTokenPasword);
  *           type: string
  *           description: Confirmación de la nueva contraseña
  *       example:
- *         password: "DA123"
- *         confirmpassword: "DA123"
+ *         password: "tutor123EPN2"
+ *         confirmpassword: "tutor123EPN2"
  */
 /**
  * @swagger

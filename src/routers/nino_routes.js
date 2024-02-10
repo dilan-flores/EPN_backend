@@ -42,8 +42,8 @@ import{
  *           type: String
  *           description: Contraseña del usuario Niño
  *       example:
- *         Usuario_nino: AlexY
- *         Password_nino: AAYF1234
+ *         Usuario_nino: "AlexY"
+ *         Password_nino: "AAYY1234"
  */
 
 /**
@@ -96,10 +96,10 @@ router.post('/nin@s/login',loginNino);
  *           type: string
  *           description: Contraseña del Niño
  *       example:
- *         Nombre_nino: "AlexY"
+ *         Nombre_nino: "Alex Yánez"
  *         FN_nino: "2012-12-05"
  *         Usuario_nino: "AlexY"
- *         Password_nino: "AAYF1234"
+ *         Password_nino: "AAYY1234"
  */
 /**
  * @swagger
@@ -280,7 +280,7 @@ router.delete('/nin@s/eliminar/:id',verificarAutenticacion,eliminarNino);
  *           type: string
  *           description: Usuario del niño para restablecer la contraseña (Se envía el email del tutor)
  *       example:
- *         "Usuario_nino": "AlexY" 
+ *         Usuario_nino: "AlexY" 
  */
 /**
  * @swagger
@@ -324,8 +324,8 @@ router.get("/nin@s/recuperar-password/:token", comprobarTokenPaswordNino);
  *           type: string
  *           description: Confirmación de la nueva contraseña
  *       example:
- *         password: "DAFQ1234"
- *         confirmpassword: "DAFQ1234"
+ *         password: "AAYY1234*"
+ *         confirmpassword: "AAYY1234*"
  */
 /**
  * @swagger
