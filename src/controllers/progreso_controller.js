@@ -10,11 +10,11 @@ import { body, validationResult } from 'express-validator';
 const validar = [
     body('Puntuacion')
         .isNumeric().withMessage('La puntuación debe contener solo números')
-        .isLength({ min: 1, max: 3 }).withMessage('La puntuación es /100'),
+        .isInt({ min: 0, max: 100 }).withMessage('La puntuación debe estar entre 0 y 100'),
 
     body('Completado')
         .isNumeric().withMessage('Los ejercicios de una actividad se registran por números realizados')
-        .isLength({ min: 1, max: 3 }).withMessage('Exceso de ejercicios en una actividad'),
+        .isIn([1, 2, 3]).withMessage('El número de ejercicios completados debe ser 1, 2 o 3'),
 ];
 
 const ProgresoRegistro = async (req, res) => {
