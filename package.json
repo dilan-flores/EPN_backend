@@ -1,5 +1,14 @@
 {
   "name": "backend_programacion_ninos",
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ],
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    }
+  },
   "version": "1.0.0",
   "description": "Backend: Aprendizaje de programación en niños menores a 12 años",
   "main": "index.js",
@@ -38,6 +47,7 @@
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
     "mongodb": "^6.3.0",
+    "mongodb-memory-server": "^9.1.5",
     "mongoose": "^7.5.3",
     "nodemailer": "^6.9.7",
     "passport": "^0.7.0",
@@ -46,6 +56,9 @@
     "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.23.7",
+    "@babel/preset-env": "^7.23.8",
+    "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
     "supertest": "^6.3.3"

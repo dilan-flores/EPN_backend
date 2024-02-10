@@ -1,0 +1,54 @@
+{
+    "config": {
+        "target": "URL...",
+        "phases": [
+            {
+                "duration": 60,
+                "arrivalRate": 5
+            }
+        ]
+    },
+    "scenarios": [
+        {
+            "flow": [
+                {
+                    "post": {
+                        "url": "/api/nin@s/login",
+                        "json": {
+                            "Usuario_nino": "AlexY",
+                            "Password_nino": "AAYY1234"
+                        },
+                        "capture": {
+                            "json": "$.token",
+                            "as": "TokenNino"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/nin@s/65b203552f4a736e21289aae",
+                        "headers": {
+                            "Authorization": "Bearer {{ TokenNino }}"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/progreso/65a95b0468cec25087c93494",
+                        "headers": {
+                            "Authorization": "Bearer {{ TokenNino }}"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/insignias",
+                        "headers": {
+                            "Authorization": "Bearer {{ TokenNino }}"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

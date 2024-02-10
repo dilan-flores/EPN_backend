@@ -1,0 +1,46 @@
+{
+    "config": {
+        "target": "URL...",
+        "phases": [
+            {
+                "duration": 60,
+                "arrivalRate": 5
+            }
+        ]
+    },
+    "scenarios": [
+        {
+            "flow": [
+                {
+                    "post": {
+                        "url": "/api/login",
+                        "json": {
+                            "Email_tutor": "user.tutor.epn@gmail.com",
+                            "Password_tutor": "tutor123EPN"
+                        },
+                        "capture": {
+                            "json": "$.token",
+                            "as": "Token"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/tutor/65b1effa9ba67757b54c9b37",
+                        "headers": {
+                            "Authorization": "Bearer {{ Token }}"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/nin@s/65b203552f4a736e21289aae",
+                        "headers": {
+                            "Authorization": "Bearer {{ Token }}"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

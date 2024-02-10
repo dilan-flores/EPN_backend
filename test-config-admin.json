@@ -1,0 +1,46 @@
+{
+    "config": {
+        "target": "URL...",
+        "phases": [
+            {
+                "duration": 60,
+                "arrivalRate": 5
+            }
+        ]
+    },
+    "scenarios": [
+        {
+            "flow": [
+                {
+                    "post": {
+                        "url": "/api/admin/login",
+                        "json": {
+                            "Email_admin": "user.adm.epn@gmail.com",
+                            "Password_admin": "adm123EPN"
+                        },
+                        "capture": {
+                            "json": "$.token",
+                            "as": "TokenAdmin"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/actividades",
+                        "headers": {
+                            "Authorization": "Bearer {{ TokenAdmin }}"
+                        }
+                    }
+                },
+                {
+                    "get": {
+                        "url": "/api/actividad/65a95b0468cec25087c93494",
+                        "headers": {
+                            "Authorization": "Bearer {{ TokenAdmin }}"
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}
