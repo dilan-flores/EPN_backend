@@ -23,7 +23,7 @@ const sendMailToUser = async(userMail,token)=>{ // Enviar correo de verificació
     <h3>Usuario tutor, verifica tu cuenta para iniciar sesión</h3>
     <hr>
     <br>
-    <a href="http://localhost:3000/api/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <a href="https://epn-backend.onrender.com/api/confirmar/${token}">Clic para confirmar tu cuenta</a>
     <br>
     <hr>
     <footer>Bienvenido!!</footer>
@@ -41,7 +41,7 @@ const sendMailToRecoveryPassword = async(userMail,token)=>{// Enviar correo para
     <h3>Reestablece tu contraseña</h3>
     <hr>
     <br>
-    <a href="http://localhost:3000/api/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
+    <a href="https://epn-backend.onrender.com/api/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
     <br>
     <hr>
     <footer>Bienvenido!!</footer>
@@ -60,7 +60,7 @@ const sendMail_confirmNino = async(userMail,token,nino)=>{
     <h3>Verifica la cuenta de ${nino}</h3>
     <hr>
     <br>
-    <a href="http://localhost:3000/api/nin@s/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <a href="https://epn-backend.onrender.com/api/nin@s/confirmar/${token}">Clic para confirmar tu cuenta</a>
     <br>
     <hr>
     <footer>Bienvenido!!</footer>
@@ -78,7 +78,7 @@ const sendMailToRecoveryPasswordNino = async(userMail,token,nino)=>{
       <h3>Reestablece la contraseña de ${nino}</h3>
       <hr>
       <br>
-      <a href="http://localhost:3000/api/nin@s/recuperar-password/${token}">Clic para restablecer tu contraseña</a>
+      <a href="https://epn-backend.onrender.com/api/nin@s/recuperar-password/${token}">Clic para restablecer tu contraseña</a>
       <br>
       <hr>
       <footer>.............</footer>
@@ -97,7 +97,7 @@ const sendMailToAdmin = async(userMail,token)=>{
     <h1>Usuario administrador, verifica tu cuenta para iniciar sesión</h1>
     <hr>
     <br>
-    <a href="http://localhost:3000/api/admin/confirmar/${token}">Clic para confirmar tu cuenta</a>
+    <a href="https://epn-backend.onrender.com/api/admin/confirmar/${token}">Clic para confirmar tu cuenta</a>
     <br>
     <hr>
     <footer>Bienvenido!!</footer>
@@ -115,7 +115,7 @@ const sendMailToRecoveryPasswordAdmin = async(userMail,token)=>{
     <h3>Reestablece tu contraseña</h3>
     <hr>
     <br>
-    <a href="http://localhost:3000/api/admin/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
+    <a href="https://epn-backend.onrender.com/api/admin/recuperar-password/${token}">Clic para reestablecer tu contraseña</a>
     <br>
     <hr>
     <footer>..........</footer>
