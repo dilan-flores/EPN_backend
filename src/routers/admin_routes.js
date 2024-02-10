@@ -195,7 +195,7 @@ router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
 router.delete('/eliminacionCascada/:tutorId', verificarAutenticacion,eliminacionCascada);
 /**
  * @swagger
- * /api/actividades:
+ * /api/admin/tutores:
  *   get:
  *     summary: Visualizar tutores
  *     tags: [Administrador]
