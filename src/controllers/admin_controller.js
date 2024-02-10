@@ -187,7 +187,7 @@ const renderAllTutor = async (req, res) => {
             return res.status(401).json({ msg: 'No autorizado' });
         }
         // Obtener información de todos los usuarios tutores disponibles
-        const tutores = await Tutor.find({}).select("-createdAt -updatedAt -__v").lean();
+        const tutores = await Tutor.find({}).select("-createdAt -updatedAt -Password_tutor -status -token -__v").lean();
         // Si no existen registros de actividades
         if (tutores.length === 0) {
             return res.status(200).json({ msg: 'No hay tutores registrados' });
