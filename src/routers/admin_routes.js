@@ -13,6 +13,7 @@ import {
     comprobarTokenPaswordAdmin,
     nuevoPasswordAdmin,
     logoutAdmin,
+    renderAllTutor,
     eliminacionCascada
 }from "../controllers/admin_controller.js";
 
@@ -192,7 +193,23 @@ router.post("/admin/nuevo-password/:token", nuevoPasswordAdmin);
  *         description: Error en el servidor
  */
 router.delete('/eliminacionCascada/:tutorId', verificarAutenticacion,eliminacionCascada);
-
+/**
+ * @swagger
+ * /api/actividades:
+ *   get:
+ *     summary: Visualizar tutores
+ *     tags: [Administrador]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Visualización de tutores registradas
+ *       401:
+ *         description: Usuario no autorizado
+ *       500:
+ *         description: Error de servidor
+ */
+router.get('/admin/tutores',verificarAutenticacion,renderAllTutor);
 /**
  * @swagger
  * /api/admin/logout:

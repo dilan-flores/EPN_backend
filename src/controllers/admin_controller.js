@@ -170,6 +170,36 @@ const nuevoPasswordAdmin = async (req, res) => {
     }
 };
 
+const renderAllTutor = async (req, res) => {
+    try {
+        // Verificar si hay un token de autorización en las cabeceras
+        if (req.headers.authorization) {
+            const { authorization } = req.headers;
+            const { id } = jwt.verify(authorization.split(' ')[1], process.env.JWT_SECRET);
+            // Verificar si el token corresponde a un administrador en la base de datos
+            const adminToken = await Admin.findOne({ _id: id });
+            if (!adminToken) {
+                // Si no se encuentra un administrador con el ID proporcionado
+                return res.status(401).json({ msg: 'No autorizado. Solo un usuario Administrador' });
+            }
+        } else {
+            // Si no hay un token de autorización en las cabeceras
+            return res.status(401).json({ msg: 'No autorizado' });
+        }
+        // Obtener información de todos los usuarios tutores disponibles
+        const tutores = await Tutor.find({}).select("-createdAt -updatedAt -__v").lean();
+        // Si no existen registros de actividades
+        if (tutores.length === 0) {
+            return res.status(200).json({ msg: 'No hay tutores registrados' });
+        }
+        // Respuesta con información de tutores
+        res.status(200).json({ tutores });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Error del servidor' });
+    }
+};
+
 const eliminacionCascada = async (req, res) => {
     try {
         // Verificar si el token corresponde a un usuario administrador en la base de datos
@@ -246,5 +276,6 @@ export {
     comprobarTokenPaswordAdmin,
     nuevoPasswordAdmin,
     logoutAdmin,
+    renderAllTutor,
     eliminacionCascada
 }
